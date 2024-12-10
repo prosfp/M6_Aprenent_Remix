@@ -1,0 +1,54 @@
+{
+  "notes": [
+    {
+      "id": 1,
+      "title": "First Note",
+      "content": "This is the content of the first note."
+    },
+    {
+      "id": 2,
+      "title": "Second Note",
+      "content": "This is the content of the second note."
+    },
+    {
+      "id": 3,
+      "title": "Third Note",
+      "content": "This is the content of the third note."
+    },
+    {
+      "id": "2024-11-27T13:23:13.547Z",
+      "title": "Nova nota",
+      "content": "Això és una prova "
+    },
+    {
+      "id": "2024-11-27T13:23:18.669Z",
+      "title": "hola",
+      "content": "món"
+    },
+    {
+      "id": "2024-11-27T13:23:44.976Z",
+      "title": "Nova ",
+      "content": "Nota"
+    },
+    {
+      "id": "2024-11-27T13:27:38.864Z",
+      "title": "TEST",
+      "content": "TEST"
+    },
+    {
+      "id": "2024-11-27T13:30:05.739Z",
+      "title": "TEST",
+      "content": "TEST2"
+    },
+    {
+      "id": "2024-11-27T13:30:54.538Z",
+      "title": "TEST",
+      "content": "TEST"
+    },
+    {
+      "id": "2024-11-27T13:32:21.079Z",
+      "title": "HOLA",
+      "content": "PABLO"
+    }
+  ]
+}
