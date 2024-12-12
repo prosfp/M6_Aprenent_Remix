@@ -9,7 +9,7 @@ interface ChartProps {
   expenses: Expense[];
 }
 
-function Chart({ expenses }: ChartProps) {
+const Chart: React.FC<ChartProps> = ({ expenses }) => {
   const chartDataPoints = [
     { label: "Jan", value: 0 },
     { label: "Feb", value: 0 },
@@ -25,8 +25,9 @@ function Chart({ expenses }: ChartProps) {
     { label: "Dec", value: 0 },
   ];
 
+  // Agreguem les dades de les despeses
   for (const expense of expenses) {
-    const expenseMonth = new Date(expense.date).getMonth(); // starting at 0 => January => 0
+    const expenseMonth = new Date(expense.date).getMonth(); // Obtenim el mes
     chartDataPoints[expenseMonth].value += expense.amount;
   }
 
@@ -34,9 +35,9 @@ function Chart({ expenses }: ChartProps) {
   const totalMaximum = Math.max(...dataPointValues);
 
   return (
-    <section>
-      <h2>Monthly Expenses</h2>
-      <ol className="chart">
+    <section className="max-w-xl mx-auto my-8">
+      <h2 className="text-2xl font-bold text-center mb-4">Monthly Expenses</h2>
+      <div className="flex justify-between space-x-4">
         {chartDataPoints.map((dataPoint) => (
           <ChartBar
             key={dataPoint.label}
@@ -45,9 +46,9 @@ function Chart({ expenses }: ChartProps) {
             label={dataPoint.label}
           />
         ))}
-      </ol>
+      </div>
     </section>
   );
-}
+};
 
 export default Chart;

@@ -1,8 +1,9 @@
-import React from "react";
-import { Link, NavLink } from "react-router-dom";
+// app/components/navigation/ExpensesHeader.tsx
+import { NavLink } from "@remix-run/react";
 import Logo from "../util/Logo";
+import { FC } from "react";
 
-const MainHeader: React.FC = () => {
+const ExpensesHeader: FC = () => {
   return (
     <header className="flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white shadow-lg">
       {/* Logo */}
@@ -10,51 +11,45 @@ const MainHeader: React.FC = () => {
         <Logo />
       </div>
 
-      {/* Navegació principal */}
-      <nav id="main-nav" className="flex space-x-4">
+      {/* Main Navigation */}
+      <nav className="flex space-x-4">
         <ul className="flex space-x-6">
           <li>
             <NavLink
-              to="/"
+              to="/expenses"
+              end
               className={({ isActive }) =>
                 isActive
                   ? "text-blue-300"
                   : "transition-colors duration-300 hover:text-blue-300"
               }
             >
-              Home
+              Manage Expenses
             </NavLink>
           </li>
           <li>
             <NavLink
-              to="/pricing"
+              to="/expenses/analysis"
               className={({ isActive }) =>
                 isActive
                   ? "text-blue-300"
                   : "transition-colors duration-300 hover:text-blue-300"
               }
             >
-              Pricing
+              Analyze Expenses
             </NavLink>
           </li>
         </ul>
       </nav>
 
-      {/* Call to Action Navegació */}
+      {/* Call to Action Navigation */}
       <nav id="cta-nav">
-        <ul className="flex items-center space-x-4">
-          <li>
-            <Link
-              to="/auth"
-              className="rounded-lg bg-white px-4 py-2 text-blue-600 shadow-md transition-all duration-300 hover:bg-blue-100"
-            >
-              Login
-            </Link>
-          </li>
-        </ul>
+        <button className="rounded-lg bg-white px-4 py-2 text-blue-600 shadow-md transition-all duration-300 hover:bg-blue-100">
+          Logout
+        </button>
       </nav>
     </header>
   );
 };
 
-export default MainHeader;
+export default ExpensesHeader;

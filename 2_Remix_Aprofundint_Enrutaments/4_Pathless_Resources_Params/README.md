@@ -308,7 +308,7 @@ En funció dels params, haurem de canviar el que es mostra en el nostre componen
           Log in with existing user
   </Link>
   ```
-3. Clar, però necessitem que això canviï de manera dinàmica en funció de si ens trobem en mode `login` o `signup`. Per això, a `AuthForm` afegim un `useParams` per capturar els paràmetres de la URL:
+3. Clar, però necessitem que això canviï de manera dinàmica en funció de si ens trobem en mode `login` o `signup`. Per això, a `AuthForm` afegim un `useSearchParams` per capturar els paràmetres de la URL:
 
   ```tsx
   // app/components/auth/AuthForm.tsx
@@ -412,5 +412,6 @@ export default function ExpensesLayout() {
       </main>
     </>
   );
+}
 ```
 En el cas del **Load Raw Data** hem fet servir un `a` enlloc d'un `Link` ja que no volem que es renderitzi cap pàgina, sinó simplement que es retorni el JSON amb les despeses.

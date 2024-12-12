@@ -13,6 +13,7 @@ export default function AuthPage() {
       <AuthForm />
     </div>
   );
+}
 ```
 
 Anem també a veure alguns components relacionants amb les despeses, és a dir `expenses`. La idea és que no haguem de dedicar massa temps a crear components i que els puguis utilitzar com a base pel teu projecte. També pots mirar de fer servir llibreries que ja et proporcionin components com `Material-UI` o `Flowbite` (https://flowbite.com/docs/getting-started/remix/). 
