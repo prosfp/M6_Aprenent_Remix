@@ -23,6 +23,7 @@ import { Expense } from "../types/interfaces";
 
 export default function ExpensesLayout() {
   const expenses = useLoaderData() as Expense[];
+  console.log("Expenses:", expenses);
 
   return (
     <>

@@ -88,7 +88,19 @@ I ara farem servir `useLoaderData` per recuperar les dades al nostre component. 
 Dins de la funció ExpensesLayout() farem servir `useLoaderData` per recuperar les dades:
 
 ```tsx
-  const expenses = useLoaderData(); 
+// compte, he importat Expense per tipar les dades. 
+  const expenses = useLoaderData() as Expense[];
+  //...
+    <ExpensesList expenses={expenses} />
+  //...
+```
+Les dades que es recuperen de la base de dades es "serialitzen". És a dir, son valors simples com `strings` o `numbers`. Per tant, si tenim dates, com en aquest cas, les hem de convertir a `Date`. S'ha de tenir en compte quan manipulem les dades. 
+ 
+
+```tsx
+
+Ja hauries de poder veure les dades recuperades de la base de dades.
+
 
 
 

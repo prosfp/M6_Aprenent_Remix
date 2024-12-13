@@ -52,7 +52,6 @@ export async function getExpenses(): Promise<Expense[]> {
       .from("expenses")
       .select("*")
       .order("date", { ascending: false });
-    console.log("Expenses:", expenses);
     return expenses.data;
   } catch (error) {
     console.error("Error getting expenses:", error);
