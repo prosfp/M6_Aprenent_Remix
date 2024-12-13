@@ -109,7 +109,7 @@ export async function action(args: ActionFunctionArgs) {
 Ara torna a crear un nou arxiu a la carpeta `data` anomenat `expenses.server.tsx` i afegim el codi que, junt amb Prisma, ens permet enviar les dades a la base de dades.
 
 ```tsx
-// data/expenses.server.tsx
+// data/expenses.server.ts
 import { Expense } from "../types/interfaces";
 import { prisma } from "./database.server";
 
@@ -191,7 +191,7 @@ export default supabase;
 ```
 Al fitxer `.env` afegeix la variable d'entorn `SUPABASE_KEY` amb la clau que et donarà Supabase.
 
-3. Ara a `expenses.server.tsx` canvia el codi de Prisma per aquest:
+3. Ara a `expenses.server.ts` canvia el codi de Prisma per aquest:
 
 ```tsx
 import supabase from "../utils/supabaseClient";

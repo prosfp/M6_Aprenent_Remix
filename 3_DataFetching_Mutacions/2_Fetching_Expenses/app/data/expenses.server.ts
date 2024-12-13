@@ -36,7 +36,7 @@ export async function addExpense(expenseData: Expense): Promise<Expense[]> {
     return await supabase.from("expenses").insert([
       {
         title: expenseData.title,
-        amount: +expenseData.amount,
+        amount: expenseData.amount,
         date: new Date(expenseData.date).toISOString(),
       },
     ]);
