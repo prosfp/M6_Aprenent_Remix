@@ -1,4 +1,4 @@
-import { Link, useActionData } from "@remix-run/react";
+import { Form, Link, useActionData, useNavigation } from "@remix-run/react";
 import React from "react";
 
 interface ValidationErrors {
@@ -10,7 +10,10 @@ const ExpenseForm: React.FC = () => {
 
   // Hem d'assegurar a TS que validationErrors és un objecte amb claus string i valors string
   const validationErrors = useActionData<ValidationErrors>();
-  //console.log(validationErrors);
+
+  const navigation = useNavigation();
+  // si no està en estat idle, vol dir que està enviant dades
+  const isSubmitting = navigation.state !== "idle";
 
   // const submit = useSubmit();
 
@@ -25,7 +28,7 @@ const ExpenseForm: React.FC = () => {
   // }
 
   return (
-    <form
+    <Form
       method="post"
       className="flex flex-col rounded-lg bg-gray-100 p-6 shadow-md"
       id="expense-form"
@@ -93,9 +96,10 @@ const ExpenseForm: React.FC = () => {
       <div className="form-actions flex items-center justify-between">
         <button
           type="submit"
+          disabled={isSubmitting}
           className="rounded-md bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          Save Expense
+          {isSubmitting ? "Saving..." : "Submit"}
         </button>
         <Link
           className="text-indigo-500 hover:underline"
@@ -106,7 +110,7 @@ const ExpenseForm: React.FC = () => {
           Cancel
         </Link>
       </div>
-    </form>
+    </Form>
   );
 };
 

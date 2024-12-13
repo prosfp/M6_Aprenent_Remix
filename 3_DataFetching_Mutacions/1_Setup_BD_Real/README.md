@@ -1,416 +1,305 @@
-## Pathless Layout Routes (Rutes de Layout sense camí a la URL)
+# Connexió amb Bases de Dades Reals
 
-Anem a fer un exemple per veure com funcionaria una ruta de layout sense camí a la URL. Suposem que volem que les pàgines de `pricing` i `index` tinguin el mateix layout. En aquest cas, a mode d'exemple, suposem que volem fer ús de CSS per a definir els estils. Dins la carpeta `styles` ja veuràs que hi han alguns arxius CSS amb els estils que s'utilitzen en el projecte original.
+## Atlas MongoDB - La Base de Dades per a la nostra aplicació
 
-1. Primer hem de crear una ruta de layout no visible a la URL. Recordeu que això ho podem fer posant guió baix davant del nom de l'arxiu. Ens fem una genèrica per les pàgines estàtiques anomenada `_marketing.tsx`.
+MongoDB Atlas és un servei de base de dades gestionat per MongoDB. Aquest servei permet crear clústers de bases de dades MongoDB en la núvol de forma ràpida i senzilla.
 
-    ```tsx
-      // app/routes/_marketing.tsx
-    import { Outlet } from "@remix-run/react";
+### Crear un cluster en MongoDB Atlas
 
-    import marketingStyles from "../styles/marketing.css?url";
-    import sharedStyles from "../styles/shared.css?url";
+1. Per poder crear un clúster en MongoDB Atlas, primer cal tenir un compte a MongoDB Atlas. Per crear un compte, accedeix a la pàgina web de [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) i segueix els passos per crear un compte.
+2. Teniu informació addicional sobre com fer servir aquesta aplicació a [MongoDB - Atlas Tutorial](https://www.mongodb.com/resources/products/platform/mongodb-atlas-tutorial)
+3. Un cop creat el compte, accedeix a la consola de MongoDB Atlas.
+4. A la consola, clica a l'opció "Create a Cluster". Et donarà opció a crear-ne un de gratuït. 
+5. Segueix els passos per crear el clúster. 
+6. Quan entris a Atlas, hauràs de dir-li que accepti la connexió des de la IP que estàs fent servir.
 
-    export default function MarketingLayout() {
-      return <Outlet />;
-    }
+### Afegint Prisma a la nostra aplicació
 
-    export function links() {
-      return [
-        { rel: "stylesheet", href: marketingStyles },
-        {
-          rel: "stylesheet",
-          href: sharedStyles,
-        },
-      ];
-    }
-    ```
+[Prisma](https://www.prisma.io/) és una eina que ens permet interactuar amb bases de dades de forma senzilla i eficient. Per afegir Prisma a la nostra aplicació, cal seguir els següents passos:
 
-2. Hem de reanomenar els fitxers `_index.tsx` i `pricing.tsx` perquè continguin el mateix nom que la ruta de layout.
-  * `_index.tsx` -> `_marketing._index.tsx`
-  * `pricing.tsx` -> `_marketing.pricing.tsx`
+1. Pots mirar la documentació de Prisma a [Prisma Quick Start](https://www.prisma.io/docs/getting-started/quickstart-sqlite) si ho consideres.
+2. Comencem instal·lant prisma tal com ens diuen (nosaltres ja tenim el projecte creat): `npm install prisma --save-dev`
+3. I ara inicialitzem Prisma perquè funcioni amb mongoDB: `npx prisma init --datasource-provider mongodb`
+4. Això us hauria de crear una nova carpeta anomenada `prisma` amb un fitxer `schema.prisma` a dins. Aquest fitxer és on definirem el nostre model de dades.
 
-3. Ara ja s'haurien d'estar aplicant els estils que hem afegit a través del layout `_marketing.tsx`. Ara bé, hi ha una sèrie d'estils genèrics (colors globals, tipografies...) que s'estan aplicant a través del layout `root.tsx`. Per acabar de veure correctament aquestes dues pàgines, haurem d'afegir els estils `shared.css` també al layout de `_marketing.tsx` o al `root.tsx`.
+Ara torna a MongoDB Atlas i selecciona per connectar-te al teu cluster. On veus que posa "Connect to your application" selecciona "Drivers" com a la següent imatge: 
 
-**Nota: Importació de fitxers CSS a Remix**
+![Connect to your application](./public/images/atlas_connect.png)
 
-Quan treballes amb Remix i necessites importar fitxers CSS per incloure'ls al teu export links, és important utilitzar el sufix `?url`. Això assegura que el fitxer CSS sigui gestionat com una URL final després del procés de compilació.
+Segueix les instruccions (instal·lar el driver de MongoDB) i copia la cadena de connexió que et donen. Ara ves al fitxer `.env` que també ha aparegut a la carpeta del teu projecte i afegeix la cadena de connexió com a valor de la variable `DATABASE_URL`.
 
-**Per què necessitem `?url`?**
+Després de la barra ('/') abans dels query parameters, pots afegir el nom de la base de dades que vulguis crear, per exemple `remix-expenses`. T'hauria de quedar quelcom així:
 
-- **Gestió correcta dels fitxers estàtics:** Remix, juntament amb el sistema de compilació (com Vite o esbuild), podria tractar un fitxer CSS com un mòdul JavaScript/TypeScript si no utilitzes `?url`.
-- **Evitar errors de rutes:** Amb `?url`, Remix sap que el fitxer ha de ser interpretat com un recurs URL i, per tant, el gestiona correctament, evitant errors del tipus "No route matches URL".
-- **Sense necessitat de moure fitxers:** No cal desar els fitxers CSS a la carpeta `public/` perquè Remix els serveixi correctament.
-
-## Expenses header
-
-Anem a veure com més fer ús d'aquests "pathless layouts". Més endavant veurem que per accedir a la part de `expenses` necessitarem autenticació i que per tant ens interessarà tenir un navegador específic un cop l'usuari s'hagi autenticat. Per això, crearem un layout específic per a la part de `expenses`. 
-
-Anem a crear un nou component sota **navigation** anomenat `ExpensesHeader.tsx`:
-
-```tsx
-// app/components/navigation/ExpensesHeader.tsx
-import { NavLink } from "@remix-run/react";
-import Logo from "../util/Logo";
-import { FC } from "react";
-
-const ExpensesHeader: FC = () => {
-  return (
-    <header className="flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white shadow-lg">
-      {/* Logo */}
-      <div className="text-2xl font-bold">
-        <Logo />
-      </div>
-
-      {/* Main Navigation */}
-      <nav className="flex space-x-4">
-        <ul className="flex space-x-6">
-          <li>
-            <NavLink
-              to="/expenses"
-              end
-              className={({ isActive }) =>
-                isActive
-                  ? "text-blue-300"
-                  : "transition-colors duration-300 hover:text-blue-300"
-              }
-            >
-              Manage Expenses
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/expenses/analysis"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-blue-300"
-                  : "transition-colors duration-300 hover:text-blue-300"
-              }
-            >
-              Analyze Expenses
-            </NavLink>
-          </li>
-        </ul>
-      </nav>
-
-      {/* Call to Action Navigation */}
-      <nav id="cta-nav">
-        <button className="rounded-lg bg-white px-4 py-2 text-blue-600 shadow-md transition-all duration-300 hover:bg-blue-100">
-          Logout
-        </button>
-      </nav>
-    </header>
-  );
-};
-
-export default ExpensesHeader;
-
+```js
+DATABASE_URL="mongodb+srv://<username>:<password>@<cluster>/<database>?retryWrites=true&w=majority"
 ```
-Veus que hi ha alguns enllaços que ens permetran navegar per la part de `expenses`. Aquest serà diferent del header que farem servir per la part de `_marketing`.
+Aquesta direcció serà la que en faci ús `schema.prisma` per connectar-se a la base de dades.
 
-Anem a resituar ara els headers que farem servir en cada cas. 
+## Afegint un model de dades a Prisma
 
-En el cas de `_marketing` afegirem el component `MainHeader`. Modifica-ho:
+No és l'objectiu però pots afegir l'extensió de Prisma a Visual Studio Code perquè et doni suport a l'hora de treballar amb el fitxer `schema.prisma`. Per fer-ho, segueix aquests passos:
 
-```tsx
-...
-export default function MarketingLayout() {
-  return (
-    <>
-      <MainHeader />
-      <Outlet />
-    </>
-  );
-}
-...
-```
-I anem a crear una nova lògica general per la resta de l'app de cara a organitzar millor la part privada en cas que l'aplicació hagués de crèixer.
+Modifica el fitxer `schema.prisma` perquè contingui el següent:
 
-Ens generarem un layout `_app.tsx` on situarem les nostres `expenses` de moment. 
+```prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-```tsx
-// app/routes/_app.tsx
-import { Outlet } from "@remix-run/react";
-import ExpensesHeader from "../components/navigation/ExpensesHeader";
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-export default function ExpensesAppLayout(): JSX.Element {
-  return (
-    <>
-      <ExpensesHeader />
-      <Outlet />
-    </>
-  );
-}
-```
-
-I ara modifiquem les nostres rutes d'`expenses` perquè facin servir aquest layout:
-
-  - `_app.expenses.tsx`
-  - `_app.expenses._index.tsx`
-  - `_app.expenses.analysis.tsx`
-  - `_app.expenses.add.tsx`
-  - `_app.expenses.$id.tsx`
-
-Alguns detalls prou importants que ens quedaran:
-
-- Eliminar el `<MainHeader>` del nostre `root` layout, ja que ara no serà un de genèric per tota la nostra web/aplicació. 
-- Eliminar l'accés a `Expenses` des del `Main Header`. 
-- Afegir potser també la ruta `Auth` com a part del layout de `_marketing` ja que ens pot anar bé continuar veient el navbar.
-
-## Ruta de Recursos (Resource routes)
-
-Fins ara hem treballat amb rutes que carreguen vistes, informació que és visible. Ara bé, podem també fer servir les rutes per carregar certs recursos, dades, algun arxiu... Això és el que anomenem rutes de recursos. 
-
-Anem a veure com funcionen. Generem un arxiu `expenses.raw.tsx` a la carpeta `app/routes`. Enlloc d'exportar una funció que acaba retornant codi visible a través de codi JSX, en aquest cas el que tenim és una una funció `loader()`. Recordem que els loaders s'exectuen quan la ruta és cridada i per tant es fa un `GET` a la URL corresponent. Així doncs, si tenim una ruta `expenses.raw.tsx`, cada cop que visitem `/expenses.raw` es cridarà aquesta funció `loader()` definida.
-
-Agafa les **DUMMY_EXPENSES** que tenim a l'arxiu `expenses.tsx` i trasllada-les a aquest nou arxiu:
-
-```tsx
-// app/routes/expenses.raw.tsx
-interface Expense {
-  id: string;
-  title: string;
-  amount: number;
-  date: string;
+generator client {
+  provider = "prisma-client-js"
 }
 
-const DUMMY_EXPENSES = [
-  {
-    id: "e1",
-    title: "First Expense",
-    amount: 12.99,
-    date: new Date().toISOString(),
-  },
-  {
-    id: "e2",
-    title: "Second Expense",
-    amount: 16.99,
-    date: new Date().toISOString(),
-  },
-];
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
 
-export async function loader(): Promise<{ expenses: Expense[] }> {
-  return { expenses: DUMMY_EXPENSES };
+/// El model `Expense` representa un registre de despesa a la base de dades.
+/// 
+/// Camps:
+/// - `id`: Un identificador únic per a la despesa, generat automàticament. Mapat a la columna de la base de dades `_id`.
+/// - `title`: El títol de la despesa.
+/// - `amount`: La quantitat de diners gastats, emmagatzemada com un número de punt flotant.
+/// - `date`: La data de la despesa.
+/// - `dateAdded`: La marca de temps quan es va afegir la despesa, establerta automàticament a la data i hora actual.
+model Expense {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  title String 
+  amount Float
+  date DateTime
+  dateAdded   DateTime @default(now())
+}
+
+// id és una mica especial. Ha de contenir:
+// - @id: Indica que aquest camp és l'identificador únic del model.
+// - @default(auto()): Indica que el valor d'aquest camp s'ha de generar automàticament.
+// - @map("_id"): Indica que aquest camp s'ha de mapejar a la columna "_id" de la base de dades.
+// - @db.ObjectId: Indica que aquest camp ha de ser un ObjectId de MongoDB.
+```
+Com veus els camps `id` i `dateAdded` són especials. Aquests s'afegiran per defecte sense necessitat de passar-los nosaltres. 
+
+I ara genera el client de Prisma amb la comanda `npx prisma generate`. Això afegirà a `node_modules` el client de Prisma.
+
+
+## Preparant el codi per enviar les meves dades
+
+Abans de començar, super IMPORTANT!
+
+Les 'Actions' i 'Loaders' les afegirem a les nostres rutes, no als nostres components. Sòn les rutes les que s'han d'encarregar de gestionar la lògica de la nostra app i els components s'han de limitar a mostrar la informació que els passen.
+
+### Afegint "Action" de l'Expense Form
+
+L'expense form es fa servir a més d'un lloc de la nostra aplicació. De moment implementem-ho a `add` i afegimr l'acció per poder enviar les dades a la base de dades.
+
+Recorda que les `Actions` es recolliran qualssevol petició del tipus POST, PUT, DELETE, etc. que hi hagi sota el seu domini (ruta). Així que en aquest cas, com que estem afegint una nova despesa i el nostre formulari és de tipus POST, aquesta serà l'encarregada de rebre la petició.
+
+> **Nota:** Crea una carpeta anomenada `data` al teu projecte i copia el fitxer `database.server.ts` que trobaràs al codi de referència. Ho necessitarem per poder connectar-nos a la base de dades. Per cert, si fem servir el nom de fitxer `server.js` remix sap que aquest codi només s'ha de fer servir al servidor i no al client.
+
+De moment afegeig l'acció a la pàgina `add` sense cap lògica a dins. Això ho farem més endavant.
+
+```js
+... 
+export async function action(args: ActionFunctionArgs) {
+  return {};
+}
+```
+Ara torna a crear un nou arxiu a la carpeta `data` anomenat `expenses.server.tsx` i afegim el codi que, junt amb Prisma, ens permet enviar les dades a la base de dades.
+
+```tsx
+// data/expenses.server.tsx
+import { Expense } from "../types/interfaces";
+import { prisma } from "./database.server";
+
+export async function addExpense(expenseData: Expense) {
+  console.log("Adding expense:", expenseData);
+  try {
+    await prisma.expense.create({
+      data: {
+        title: expenseData.title,
+        // L'operador + permet de convertir une string en number que és el que espera la BD
+        amount: +expenseData.amount,
+        // new Date(expenseData.date) permet de convertir la string en date que és el que espera la BD
+        date: new Date(expenseData.date),
+      },
+    });
+  } catch (error) {
+    console.error("Error adding expense:", error);
+    throw error;
+  }
+}
+```
+La funció `addExpense` serà el nostre "fetch POST" gestionat per Prisma que enviarà les dades a la base de dades. 
+
+Ara sí que podem completar l'acció de la pàgina `add` amb la lògica per enviar les dades a la base de dades.
+
+```tsx
+// routes/_app/expenses.add.tsx
+
+export async function action({ request }: ActionFunctionArgs) {
+  // formData retorna la promesa de retornar la informació del formulari
+  const formData = await request.formData();
+  // Puc recuperar individualment els valors del formulari amb get() i el nom del camp
+  // const title = formData.get("title");
+  // const amount = formData.get("amount");
+  // ...
+  const expenseData = {
+    title: formData.get("title") as string, // hauria de ser un string sempre i ens evita error TS
+    amount: parseFloat(formData.get("amount") as string), // Converteix a número
+    date: new Date(formData.get("date") as string), // Converteix a Data
+  };
+
+  console.log(formData, expenseData);
+  await addExpense(expenseData);
+
+  // És habitual retornar un redirect després d'una mutació.
+  return redirect("/expenses");
 }
 ```
 
-Visita ara la URL `/expenses.raw` i veuràs que es carreguen les despeses que hem definit a l'arxiu `expenses.raw.tsx` en format JSON.
+És important que les dades siguin del tipus correcte abans d'enviar-les a la base de dades. Per exemple, el camp `amount` ha de ser un número i el camp `date` ha de ser una data. Si no ho fem, la base de dades ens retornarà un error.
 
+## Alternativa - SupaBase (SQL)
 
-## Splat Routes - Rutes amb paràmetres variables, però sense un id o valor concret al darrera. 
+També m'agradaria que provessim a connectar-nos amb una altra plataforma, [Supabase](https://supabase.com/). Aquesta plataforma ens permet connectar-nos a una base de dades PostgreSQL.
 
-Ja quasi ho tenim amb tots els tipus de rutes que pot gestionar Remix. Anem a veure aquesta opció. 
+Per treballar de manera més senzilla, també és aconsellable fer ús del seu client. 
 
-Les Splat Routes són una funcionalitat de Remix que permet capturar qualsevol segment addicional d'una URL després d'una ruta base. S'utilitzen per manejar rutes dinàmiques que poden tenir múltiples subrutes de longitud variable o quan necessites capturar una part arbitrària d'una URL.
+1. Instal·la el client de Supabase al projecte
 
-### Sintaxi
-
-A Remix, pots definir una splat route utilitzant un `$` al final del nom de la ruta. Per exemple:
-
-Un arxiu de ruta anomenat `files.$.tsx` capturarà qualsevol segment de la ruta que segueixi la paraula "files".
-
-### Exemple d'ús
-
-Suposem que tens un lloc web per mostrar fitxers en diferents carpetes, com:
-
+```bash
+npm install @supabase/supabase-js
 ```
-/files/documents/reports/2024
-/files/images/vacations
-/files/videos/tutorials/remix-basics
-```
+2. Crear un fitxer per inicialitzar el client. Crea una carpeta 'utils' i un fitxer 'supabaseCient.ts' amb el següent codi:
 
-Pots utilitzar una splat route per capturar tot el segment després de `/files`:
+```ts
+// /app/utils/supabaseClient.ts
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-```tsx
-// app/routes/files.$*.tsx
-import { useParams } from "@remix-run/react";
+const supabaseUrl: string = "https://vsyidbwwlamucmzjqpca.supabase.co";
+const supabaseKey: string | undefined = process.env.SUPABASE_KEY;
 
-export default function FileViewer() {
-  const params = useParams();
-  const splat = params["*"]; // Captura tot el que hi ha després de "/files/"
-
-  return (
-    <div>
-      <h1>File Viewer</h1>
-      <p>Path: {splat}</p>
-    </div>
-  );
+if (!supabaseKey) {
+  throw new Error("Missing SUPABASE_KEY environment variable");
 }
+
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+
+export default supabase;
 ```
+Al fitxer `.env` afegeix la variable d'entorn `SUPABASE_KEY` amb la clau que et donarà Supabase.
 
-Si visites `/files/documents/reports/2024`, el valor de `splat` serà:
-
-```
-documents/reports/2024
-```
-
-### Casos pràctics
-
-- **Gestió de rutes jeràrquiques:** Les splat routes són útils quan treballes amb estructures jeràrquiques, com sistemes de fitxers, jerarquies de categories, o rutes d'API.
-- **Captura de rutes desconegudes:** Si tens un patró de rutes on algunes parts són dinàmiques o no conegudes en temps de desenvolupament.
-- **Redireccions dinàmiques:** Quan necessites redirigir o manipular qualsevol ruta dins d'un conjunt predefinit.
-
-### Anem a fer una prova
-
-Crea una nova ruta `$.tsx` a la carpeta `app/routes`. Aquesta ruta capturarà qualsevol segment de la URL que no hagi estat capturat per cap altra ruta. 
+3. Ara a `expenses.server.tsx` canvia el codi de Prisma per aquest:
 
 ```tsx
-// app/routes/$.tsx
-import { LoaderFunctionArgs, redirect } from "@remix-run/node";
+import supabase from "../utils/supabaseClient";
+import { Expense } from "../types/interfaces";
 
-export function loader({ params }: LoaderFunctionArgs) {
-  console.log(params);
-  if (params["*"] === "exp") {
-    return redirect("/expenses");
+export async function addExpense(expenseData: Expense) {
+  const { data, error } = await supabase.from("expenses").insert([
+    {
+      title: expenseData.title,
+      amount: +expenseData.amount,
+      date: new Date(expenseData.date).toISOString(),
+    },
+  ]);
+
+  if (error) {
+    console.error("Error adding expense:", error);
+    throw new Error(error.message);
   }
 
-  throw Response.json("Not found", { status: 404 });
+  return data;
 }
 ```
-En aquest cas si visites qualssevol URL veuràs tant el `console.log` que és genera al "servidor" (consola de Vite) com que es retorna un error 404 (tot i que nosaltres encara no estem gestionant els ErrorBoundaries)
 
+Si proves a afegir una despesa, veuràs que ara les dades s'envien a la base de dades de Supabase.
 
-## Resum dels tipus de ruta 
-| **Tipus de Ruta**         | **Arxiu**                            | **Ruta Generada**                     | **Descripció**                                                                                                                                       |
-|----------------------------|---------------------------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Basic Routes**           | `news.jsx`                           | `/news`                                | Ruta bàsica que apunta directament a l'arxiu.                                                                                                        |
-| **Nested Routes with Folders** | `news/create.jsx` (dins `news/`)    | `/news/create`                         | Ruta que reflecteix l'estructura de carpetes per a rutes niades.                                                                                     |
-| **Nested Routes with Dot Delimiters** | `news.create.jsx`                   | `/news/create`                         | Ruta niada utilitzant punts (.) per evitar crear carpetes.                                                                                           |
-| **Dynamic Routes**         | `news/$id.jsx` o `news.$id.jsx`      | `/news/abc`                            | Ruta dinàmica on `abc` és un paràmetre que es pot accedir com a `params.id`.                                                                         |
-| **Splat Routes**           | `news/$`                             | `/news/match/any/path`                 | Ruta que coincideix amb qualsevol subruta a partir de `/news`.                                                                                       |
-| **Layout Routes**          | `news.jsx` (layout) i `news/create.jsx` | `/news/create`                         | Ruta amb elements compartits d'un layout que s'aplica a les subrutes.                                                                                |
-| **Pathless Routes**        | `__news/create.jsx` i `__news.jsx`   | `/create`                              | Layout sense camí associat. El layout no afegeix cap part de ruta visible però encara pot contenir components compartits per les subrutes.           |
+# Afegint Validació del Servidor
 
+A hores d'ara tenim una certa validació a través del nostre formulari. Però això no és suficient. La validació al client és preventiva i poc robusta ja que es pot canviar molt fàcilment modificant simplement a través del DevTools per exemple. 
 
-# Una darrera coseta: Query Params
+Anem a validar les nostres dades a través d'un nou arxiu sota `/data` que anomenarem `validation.server.js`. Pots agafar l'arxiu que hi ha al repositori de referència i copiar-lo directament. 
 
-Anem a posar el cas de la pàgina de login. Volem que aquesta em permeti bé fer login o signup i no té massa sentit que haguem de fer dues rutes diferents per a això.
+Veuràs que hi ha una sèrie de validacions prou bàsiques que s'agafen totes elles en una funció que finalment retorna un objecte amb aquelles que no s'hagin validat, si s'escau. 
 
-* Signup: Crear un nou usuari
-* Login: Autenticar un usuari existent
-
-Una opció seria fer servir un estàndar de React com `useState` per controlar quin mode estem. 
-
-Ara bé, anem a veure com fer això amb Query Params.
-
-Suposem que podem tenir paràmetres diferents en el cas de la ruta `auth`:
-
-- `/auth?mode=login`
-- `/auth?mode=signup`
-
-En funció dels params, haurem de canviar el que es mostra en el nostre component original. Com ho fem? 
-
-1. A `AuthForm`importem el hook-comonent `Link` de Remix.
-2. A la part del butó de login, afegim un `Link` de la següent manera:
-  
-  ```tsx
-  <Link to="?mode=login" className="mt-3 block text-indigo-600">
-          Log in with existing user
-  </Link>
-  ```
-3. Clar, però necessitem que això canviï de manera dinàmica en funció de si ens trobem en mode `login` o `signup`. Per això, a `AuthForm` afegim un `useParams` per capturar els paràmetres de la URL:
-
-  ```tsx
-  // app/components/auth/AuthForm.tsx
-import { Link, useSearchParams } from "@remix-run/react";
-import { FaLock } from "react-icons/fa";
-
-function AuthForm() {
-  // useSearchParams em retorna un array amb el primer element com a objecte amb
-  // els paràmetres de cerca. El segon no el necessito ja que seria per a
-  // manipular els paràmetres de cerca.
-  const [searchParams] = useSearchParams();
-  // Si no hi ha paràmetre "mode" al query, per defecte serà login.
-  const authMode = searchParams.get("mode") || "login";
-
-  // Ens fem un ternari per a canviar el text del botó i el link
-  const submitBtnCaption = authMode === "login" ? "Login" : "Create User";
-  // Ens fem un ternari per a canviar el text del link
-  const toggleBtnCaption =
-    authMode === "login" ? "Create a New User" : "Log in with existing user";
-
-  return (
-    <form
-      method="post"
-      className="mx-auto max-w-md rounded-lg bg-indigo-100 p-5 shadow-md"
-      id="auth-form"
-    >
-      ...
-      // resta de codi
-      ...
-      <div className="text-center">
-        <button className="rounded bg-indigo-600 px-4 py-2 text-white">
-          {submitBtnCaption}
-        </button>
-        <Link
-        // També hem hagut de fer ús del ternari per canviar el link com a tal! 
-          to={authMode === "login" ? "?mode=signup" : "?mode=login"}
-          className="mt-3 block text-indigo-600"
-        >
-          {toggleBtnCaption}
-        </Link>
-      </div>
-    </form>
-  );
-}
-  ```
-
-  4. Canviem finalmet únicamen la icona del nostre formulari per a que sigui més visual el canvi de mode. Afegim `FaUserPlus`de React Icons. També he aprofitat per donar alguns estils extra.
-
-  ```tsx
-  // app/components/auth/AuthForm.tsx
-  import { FaLock, FaUserPlus } from "react-icons/fa";
-  ...
-  <div className="mb-5 flex justify-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-200 text-2xl text-indigo-600">
-          {authMode === "login" ? <FaLock /> : <FaUserPlus />}
-        </div>
-  </div>
-  ...
-  ```
-
-5. Ja pots provar que efectivament podem fer "switch" entre cada mode de manera dinàmica.
-
-## Extra abans de continuar
-
-Modifica el layout d'expenses per afegir botons per afegir una nova despesa i per poder carregar les dades json:
+Ara afegeix aquesta validació a la teva ruta `_app.expenses.add`:
 
 ```tsx
-// app/routes/_app.expenses.tsx
 ...
+  try {
+    // Validem les dades abans de fer la mutació
+    validateExpenseInput(expenseData);
+  } catch (error) {
+    // En aquest cas ens volem assegurar que l'usuari vegi els errors que han provocat aquest error de validació
+    return error;
+  }
 
-import { Link, Outlet } from "@remix-run/react";
-import ExpensesList from "../components/expenses/ExpensesList";
-import { FaPlus } from "react-icons/fa";
-
-import { Link, Outlet } from "@remix-run/react";
-import ExpensesList from "../components/expenses/ExpensesList";
-import { FaPlus, FaDownload } from "react-icons/fa";
-
-export default function ExpensesLayout() {
-  return (
-    <>
-      <Outlet />
-      <main>
-        <section className="my-4 flex justify-center">
-          <Link
-            to="add"
-            className="flex items-center rounded bg-gray-100 p-2 text-blue-500 shadow-md hover:text-blue-700"
-          >
-            <FaPlus />
-            <span className="ml-2">Add Expense</span>
-          </Link>
-          <a
-            href="/expenses/raw"
-            className="ml-4 flex items-center rounded bg-gray-100 p-2 text-blue-500 shadow-md hover:text-blue-700"
-          >
-            <FaDownload />
-            <span className="ml-2">Load Raw Data</span>
-          </a>
-        </section>
-        <ExpensesList expenses={DUMMY_EXPENSES} />
-      </main>
-    </>
-  );
+  await addExpense(expenseData);
+  return redirect("/expenses");
+  ...
 ```
-En el cas del **Load Raw Data** hem fet servir un `a` enlloc d'un `Link` ja que no volem que es renderitzi cap pàgina, sinó simplement que es retorni el JSON amb les despeses.
+
+Com pots veure hi afegim una lògica de `try/catch` per poder gestionar l'error i fer-lo visible a l'usuari enlloc de retornar el `redirect` directament.
+
+Això ens permet que al nostre component `ExpenseForm` puguem, amb `useActionData()`, recuperar les dades de l'erro. 
+
+> **Nota:** Recorda que pots fer servir `useActionData()` a qualsevol component que estigui sota la ruta que ha generat l'acció, no únicament allà on gestiones `action`.  
+
+```tsx
+// components/ExpenseForm.tsx
+//...
+interface ValidationErrors {
+  [key: string]: string; // Clau string i valor string
+}
+//...
+  const validationErrors = useActionData<ValidationErrors>();
+//...
+ {validationErrors && (
+        <ul className="mb-4 list-inside list-disc text-red-500">
+          {Object.values(validationErrors).map((error: string) => (
+            <li key={error}>{error}</li>
+          ))}
+        </ul>
+      )}
+//...
+```
+
+Si proves a treure la validació `min` del codi del return i tot i així intentes enviar-ho amb un valor negatiu, t'hauria d'aparèixer la informació d'error per l'usuari. 
+
+Ens faltarà encara evitar que recarregui la pàgina. Això ho fa perquè en realitat estem tornant a enviar el form i per tant fa un POST que recull el loader. Ho veurem més endavant. 
+
+## Enviament programàtic dels Forms
+
+Abans de continuar hi ha quelcom rellevant a destacar. Pot haver-hi diferents motius pels quals ens pot interessar realitzar algunes tasques abans que el nostre form s'enviï, és a dir s'executi la petició POST. Fins ara hem vist que ens va molt bé automatitzar aquest procés i donar per fet que els `Action` s'encarregaran d'això sense necessitat de fer un submit.
+
+Hi ha casos on el comportament per defecte d'un "submit" no és el que volem d'entrada. Per exemple, si volem que l'enviament es realitzi després d'algun "timer" o si volem fer alguna tasca abans de l'enviament, com per exemple netejar els camps del formulari.
+
+Remix ens permet fer-ho a través de `useSubmit`, com s'ha fet de manera habitual als formularis de sempre.
+
+```tsx
+// components/ExpenseForm.tsx
+//...
+  const submit = useSubmit();
+
+  function submitHandler(event) {
+    event.preventDefault();
+    // Fer la teva propia validació per exemple.
+    //...
+    submit(event.target, {
+      // action: "/expenses/add", // Això no cal perquè ja ho fa el formulari
+      method: "post",
+    });
+  }
+  //...
+  <form
+      method="post"
+      className="flex flex-col rounded-lg bg-gray-100 p-6 shadow-md"
+      id="expense-form"
+      onSubmit={submitHandler}
+    >
+  //...
+```
+
