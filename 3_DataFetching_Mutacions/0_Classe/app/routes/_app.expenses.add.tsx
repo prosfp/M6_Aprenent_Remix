@@ -23,6 +23,8 @@ export default function ExpensesAddPage() {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
 
+  // "as string" és una manera de dir a TS que estem segurs que el valor serà un string, que és la manera
+  // com FormData retorna els valors
   const expenseData = {
     title: formData.get("title") as string,
     amount: parseFloat(formData.get("amount") as string),

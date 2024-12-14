@@ -1,5 +1,7 @@
 # Connexió amb Bases de Dades Reals
 
+A continuació trobareu dues opcions per connectar-vos a una base de dades real. La primera opció és connectar-vos a una base de dades MongoDB a través de MongoDB Atlas. La segona opció és connectar-vos a una base de dades PostgreSQL a través de Supabase. He reorganitzat el contingut perquè pugueu seguir ambdues opcions.
+
 ## Atlas MongoDB - La Base de Dades per a la nostra aplicació
 
 MongoDB Atlas és un servei de base de dades gestionat per MongoDB. Aquest servei permet crear clústers de bases de dades MongoDB en la núvol de forma ràpida i senzilla.
@@ -101,6 +103,7 @@ Recorda que les `Actions` es recolliran qualssevol petició del tipus POST, PUT,
 De moment afegeig l'acció a la pàgina `add` sense cap lògica a dins. Això ho farem més endavant.
 
 ```js
+// expenses.add.tsx
 ... 
 export async function action(args: ActionFunctionArgs) {
   return {};
@@ -109,7 +112,7 @@ export async function action(args: ActionFunctionArgs) {
 Ara torna a crear un nou arxiu a la carpeta `data` anomenat `expenses.server.tsx` i afegim el codi que, junt amb Prisma, ens permet enviar les dades a la base de dades.
 
 ```tsx
-// data/expenses.server.ts
+// expenses.server.ts
 import { Expense } from "../types/interfaces";
 import { prisma } from "./database.server";
 
@@ -119,10 +122,10 @@ export async function addExpense(expenseData: Expense) {
     await prisma.expense.create({
       data: {
         title: expenseData.title,
-        // L'operador + permet de convertir une string en number que és el que espera la BD
-        amount: +expenseData.amount,
+        // Si necessitessim: L'operador + (+expenseData.amount) permet de convertir une string en number que és el que espera la BD
+        amount: expenseData.amount,
         // new Date(expenseData.date) permet de convertir la string en date que és el que espera la BD
-        date: new Date(expenseData.date),
+        date: nexpenseData.date,
       },
     });
   } catch (error) {
@@ -136,15 +139,15 @@ La funció `addExpense` serà el nostre "fetch POST" gestionat per Prisma que en
 Ara sí que podem completar l'acció de la pàgina `add` amb la lògica per enviar les dades a la base de dades.
 
 ```tsx
-// routes/_app/expenses.add.tsx
+// expenses.add.tsx
 
 export async function action({ request }: ActionFunctionArgs) {
   // formData retorna la promesa de retornar la informació del formulari
   const formData = await request.formData();
-  // Puc recuperar individualment els valors del formulari amb get() i el nom del camp
-  // const title = formData.get("title");
-  // const amount = formData.get("amount");
+ 
   // ...
+  // Recuperem les dades del formulari. 
+  // Les dades recuperades amb `formData` són sempre strings.
   const expenseData = {
     title: formData.get("title") as string, // hauria de ser un string sempre i ens evita error TS
     amount: parseFloat(formData.get("amount") as string), // Converteix a número
@@ -163,7 +166,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 ## Alternativa - SupaBase (SQL)
 
-També m'agradaria que provessim a connectar-nos amb una altra plataforma, [Supabase](https://supabase.com/). Aquesta plataforma ens permet connectar-nos a una base de dades PostgreSQL.
+Una altra opció que també està molt bé és [Supabase](https://supabase.com/). Aquesta plataforma ens permet connectar-nos a una base de dades PostgreSQL.
 
 Per treballar de manera més senzilla, també és aconsellable fer ús del seu client. 
 
@@ -173,7 +176,7 @@ Per treballar de manera més senzilla, també és aconsellable fer ús del seu c
 npm install @supabase/supabase-js
 ```
 2. Crear un fitxer per inicialitzar el client. Crea una carpeta 'utils' i un fitxer 'supabaseCient.ts' amb el següent codi:
-
+- Project Settings -> API -> Project URL i Project API Keys
 ```ts
 // /app/utils/supabaseClient.ts
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
@@ -189,8 +192,7 @@ const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 
 export default supabase;
 ```
-Al fitxer `.env` afegeix la variable d'entorn `SUPABASE_KEY` amb la clau que et donarà Supabase.
-
+Al fitxer `.env` afegeix la variable d'entorn `SUPABASE_KEY` amb la clau que et donarà Supabase i que pots trobar al teu projecte 
 3. Ara a `expenses.server.ts` canvia el codi de Prisma per aquest:
 
 ```tsx
@@ -201,8 +203,8 @@ export async function addExpense(expenseData: Expense) {
   const { data, error } = await supabase.from("expenses").insert([
     {
       title: expenseData.title,
-      amount: +expenseData.amount,
-      date: new Date(expenseData.date).toISOString(),
+      amount: expenseData.amount,
+      date: expenseData.date,
     },
   ]);
 
@@ -215,7 +217,10 @@ export async function addExpense(expenseData: Expense) {
 }
 ```
 
+
 Si proves a afegir una despesa, veuràs que ara les dades s'envien a la base de dades de Supabase.
+
+> **Nota:** Les dades que ens arriben 
 
 # Afegint Validació del Servidor
 
