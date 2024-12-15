@@ -2,8 +2,9 @@ import {
   Form,
   Link,
   useActionData,
-  useLoaderData,
+  useMatches,
   useNavigation,
+  useParams,
 } from "@remix-run/react";
 import React from "react";
 
@@ -25,21 +26,31 @@ const ExpenseForm: React.FC = () => {
   // Hem d'assegurar a TS que validationErrors és un objecte amb claus string i valors string
   const validationErrors = useActionData<ValidationErrors>();
 
-  // En el cas de l'edició de despeses, fem servir les dades que ens venen del loader cridat a través de /$id:
-  const expenseData: Expense = useLoaderData();
+  // Necessitaré el paràmetre id per recuperar les dades de la despesa que vull editar
+  const params = useParams();
+  console.log(params);
 
-  // Si tenim dades de despesa, les posem com a valors per defecte del formular
-  const defaultValues = expenseData
-    ? {
-        title: expenseData.title,
-        amount: expenseData.amount,
-        date: new Date(expenseData.date).toISOString().slice(0, 10),
-      }
-    : {
-        title: "",
-        amount: 0,
-        date: today,
-      };
+  // En el cas de l'edició de despeses, fem servir les dades que ens venen del loader cridat a través de /$id:
+  //const expenseData: Expense = useLoaderData();
+
+  // Ara recuperem les dades des el `loader` d'expenses, que ja no és el pare.
+  const matches = useMatches();
+  // Nosaltres necessitem les dades de la ruta 'routes/_app/expenses/`
+  const matchedRoute = matches.find(
+    (match) => match.id === "routes/_app.expenses",
+  );
+  console.log(matchedRoute);
+
+  // Suposem que sempre hi haurà dades. Si no n'hi ha, posem valors per defecte.
+  const expenseData = (matchedRoute?.data as Expense[])?.find(
+    ({ id }) => id == params.id,
+  ) || {
+    title: "",
+    amount: 0,
+    date: today,
+  };
+
+  console.log(expenseData);
 
   const navigation = useNavigation();
 
@@ -76,7 +87,7 @@ const ExpenseForm: React.FC = () => {
           type="text"
           id="title"
           name="title"
-          defaultValue={defaultValues?.title}
+          defaultValue={expenseData?.title}
           required
           maxLength={30}
           className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -95,7 +106,7 @@ const ExpenseForm: React.FC = () => {
             type="number"
             id="amount"
             name="amount"
-            defaultValue={defaultValues?.amount}
+            defaultValue={expenseData?.amount}
             min="0"
             step="0.01"
             required
@@ -113,7 +124,7 @@ const ExpenseForm: React.FC = () => {
             type="date"
             id="date"
             name="date"
-            defaultValue={defaultValues?.date}
+            defaultValue={expenseData?.date}
             max={today}
             required
             className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"

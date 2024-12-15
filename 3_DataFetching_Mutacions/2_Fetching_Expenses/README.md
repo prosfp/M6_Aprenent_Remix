@@ -96,17 +96,160 @@ Dins de la funció ExpensesLayout() farem servir `useLoaderData` per recuperar l
 ```
 Les dades que es recuperen de la base de dades es "serialitzen". És a dir, son valors simples com `strings` o `numbers`. Per tant, si tenim dates, com en aquest cas, les hem de convertir a `Date`. S'ha de tenir en compte quan manipulem les dades. 
  
-
-```tsx
-
 Ja hauries de poder veure les dades recuperades de la base de dades.
 
+### Més sobre Loaders
+
+Hem de saber algunes coses més sobre com Remix gestiona els loaders i les respostes.
+
+El loader quan retorna les dades en realitat el que fa és retornar un Respons.json(). És a dir:
+
+```tsx
+export async function loader() {
+  return getExpenses();
+}
+```
+
+És el mateix que:
+
+```tsx
+export async function loader() {
+
+const expenses = await getExpenses();
+return Response.json(expenses);
+}
+```
+
+El `Loader` HA DE (MUST) retornar una `Response`. I el `Loader` sempre serà executat al servidor.
+
+Anem a insistir en alguns temes claus del `Loader`:	
+
+A Remix, el `loader` és una funció clau per gestionar dades que es poden renderitzar al servidor o al client, depenent del context de la teva aplicació i com estigui configurada. Aquí tens un resum de com funciona:
+
+### **Renderització al servidor**
+1. Quan un usuari accedeix a una pàgina, Remix executa els `loaders` corresponents al servidor.
+2. Això permet obtenir dades abans que es generi l'HTML que es retorna al navegador. Per exemple, quan utilitzes el mètode `getExpenses` en el teu `loader` (com a `/expenses`), el servidor retorna una resposta amb les dades ja processades abans que el navegador les rebi.
+3. Això és especialment útil per al SEO, ja que l'HTML generat inclou contingut completament renderitzat des del servidor.
+
+### **Renderització al client**
+1. Si navegues dins l'aplicació (per exemple, utilitzant `Link` per accedir a `/expenses/add`), Remix reutilitza el JavaScript carregat al navegador per fer una navegació SPA (Single Page Application).
+2. En aquest cas, el `loader` s'executa al client per obtenir les dades necessàries per a la pàgina nova i que segurament serà únicament una part de la pàgina.
+3. Això redueix el temps de càrrega perceptible per a l'usuari perquè no cal recarregar tota la pàgina.
+
+### **Com es coordinen servidor i client**
+- Quan un `loader` s'executa al servidor, Remix aprofita l'execució per evitar sol·licituds redundants des del client.
+- Les dades que el `loader` retorna es passen automàticament a la pàgina mitjançant `useLoaderData`, un hook que proporciona l'accés a aquestes dades en el component renderitzat.
+
+### **Altres detalls importants**
+- **Errors del loader:** Si el `loader` retorna un error, Remix redirigeix a una pàgina d'error personalitzada o genera un error al servidor (per exemple, amb `throw Response`).
+- **Accions:** Quan realitzes mutacions (com afegir una despesa a `/expenses/add`), l'acció associada al formulari (`action`) s'encarrega al servidor. Aquesta acció pot retornar un `redirect` perquè l'usuari vegi els resultats actualitzats sense necessitat de forçar una recàrrega completa.
+
+Si tens més dubtes o vols veure algun exemple concret, podem treballar sobre un cas pràctic dins el teu projecte!
+
+---
+**IMPORTANT: Abans de continuar, he fet alguns canvis a l'arxiu `expenses.server.ts` per adaptar-lo millor a la resposta que genera Supabase (que retorna un objecte amb `data` i `error`) i per poder tipar el codi correctament.**
+
+1. **Maneig d'errors explícits de Supabase**  
+   Supabase sempre retorna un objecte amb `data` i `error`. És important comprovar explícitament `error` abans de retornar el resultat.
+
+2. **`single()` a `addExpense`**  
+   Quan inserim només un element, podem fer servir `.single()` per retornar directament l'objecte afegit, sense embolcallar-lo en un array.
+
+3. **Conversió explícita de tipus**  
+   A `return data as Expense`, forcem TypeScript a reconèixer el tipus adequat de les dades que tornem.
+
+4. **Millor gestió d'errors**  
+   Llançar errors amb un missatge més informatiu fa que sigui més fàcil de depurar.
+
+## EDITANT Despeses
+
+Per editar una despesa quines seran les accions que necessitem? Pensa-ho tu mateix potser abans de conteinuar llegint... 
+
+...
+...
+...
+...
+...
 
 
+La cosa quedaria una mica així:
 
+1. **Carregar les dades de la despesa (loader a `/expenses/$id`)**  
+2. **Utilitzar les dades carregades al formulari**  
+3. **Gestionar l'acció d'actualització (action a `/expenses/$id`)**  
 
+### Carregar les dades de la despesa
 
+Reviseu la documentació de **Supabase** Per entendre les lògiques de les crides a la base de dades. Us deixo l'enllaç a la documentació de Supabase: [Supabase - JS Client](https://supabase.com/docs/reference/javascript/select). Podreu veure diversos exemples que segur us seran d'utilitat, com per exemple:
 
+![Filtrar per Imatge](./public/images/queries_supabase.png)
 
+Amb això podem veure com afegir la nostra nova funció `getExpense` al nostre arxiu `expenses.server.ts`:
 
+```tsx
+// expenses.server.ts
+//...
+// GET By ID
+export async function getExpense(id): Promise<Expense> {
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("id", id)
+    .single();
 
+  if (error) {
+    console.error("Error getting expenses:", error);
+    throw new Error("Failed to get expenses.");
+  }
+
+  return data as Expense; // Garantim que `data` és una llista d'`Expense`
+}
+```
+
+### Utilitzar les dades carregades al formulari
+
+Primer de tot, gràcies a la ruta dinàmica `/expenses/:id`, podem accedir a l'`id` de la despesa que volem editar. Això ens permetrà carregar les dades correctes al nostre formulari. Afegim el `loader` a la nostra pàgina d'edició de despeses:
+
+```tsx
+// En aquest cas sí necessito la infromació dels paràmetres de la URL perquè em dona l'ID de l'element que vull editar
+export async function loader({ params }: LoaderFunctionArgs) {
+  const expenseId = params.id;
+  const expense = await getExpense(expenseId);
+  return expense;
+}
+```
+I ara podem fer servir el `useLoaderData` però el podem cridar directament al nostre formulari que es carrega de manera modal. Únicament les parts que hem d'afegir:
+
+```tsx
+// ExpenseForm.tsx
+//...
+const ExpenseForm: React.FC = () => {
+  //...
+  const expense = useLoaderData() as Expense;
+  //...
+   // En el cas de l'edició de despeses, fem servir les dades que ens venen del loader cridat a través de /$id:
+  const expenseData: Expense = useLoaderData();
+
+  const defaultValues = expenseData
+    ? {
+        title: expenseData.title,
+        amount: expenseData.amount,
+        date: new Date(expenseData.date).toISOString().slice(0, 10),
+      }
+    : {
+        title: "",
+        amount: 0,
+        date: today,
+      };
+  //...
+        defaultValue={defaultValues?.title}
+  //...
+        defaultValue={defaultValues?.amount}
+  //...
+        defaultValue={defaultValues?.date}
+  //...
+}
+```
+### Gestionar l'acció d'actualització
+
+Faig un "parón" aquí i continuem a la següent carpeta... ara veuràs perquè! 

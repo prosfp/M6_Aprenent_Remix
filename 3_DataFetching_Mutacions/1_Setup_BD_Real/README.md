@@ -168,6 +168,30 @@ export async function action({ request }: ActionFunctionArgs) {
 
 Una altra opció que també està molt bé és [Supabase](https://supabase.com/). Aquesta plataforma ens permet connectar-nos a una base de dades PostgreSQL.
 
+Hauràs de crear un nou projecte a Supabase i podràs començar a afegir les taules de la teva base de dades.
+
+Per generar la taula de despeses pots fer servir aquesta comanda SQL:
+
+```sql
+CREATE TABLE expenses (
+  id SERIAL PRIMARY KEY, -- Es genera un valor incremental automàticament
+  title text NOT NULL,
+  amount numeric NOT NULL,
+  date timestamptz NOT NULL
+  date_added timestamptz DEFAULT now() NOT NULL
+);
+```
+o si vols generar-ho amb UUID:
+  
+```sql
+  CREATE TABLE expenses (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  title text NOT NULL,
+  amount numeric NOT NULL,
+  date timestamptz NOT NULL
+  date_added timestamptz DEFAULT now() NOT NULL
+);
+```
 Per treballar de manera més senzilla, també és aconsellable fer ús del seu client. 
 
 1. Instal·la el client de Supabase al projecte
