@@ -1,5 +1,13 @@
-import { useActionData } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useMatches,
+  useNavigation,
+  useParams,
+} from "@remix-run/react";
 import { Link } from "@remix-run/react";
+import { Expense } from "../../../types/interfaces";
 
 interface ValidationErrors {
   [key: string]: string;
@@ -8,11 +16,47 @@ interface ValidationErrors {
 const ExpenseForm: React.FC = () => {
   const today = new Date().toISOString().slice(0, 10); // yields something like 2023-09-10
   const validationErrors = useActionData<ValidationErrors>();
-  console.log(validationErrors);
+
+  const navigation = useNavigation();
+
+  const isSubmitting = navigation.state !== "idle";
+
+  // Necessitaré saber els "params" (URL)
+  const params = useParams();
+
+  const matches = useMatches();
+
+  console.log(matches);
+
+  const matchedRoute = matches.find(
+    (match) => match.id === "routes/_app.expenses",
+  );
+
+  //const expenseData: Expense = useLoaderData();
+
+  const expenseData = (matchedRoute?.data as Expense[])?.find(
+    ({ id }) => id == params.id,
+  ) || {
+    title: "",
+    amount: 0,
+    date: today,
+  };
+
+  const defaultValue = expenseData
+    ? {
+        title: expenseData.title,
+        amount: expenseData.amount,
+        date: new Date(expenseData.date).toISOString().slice(0, 10),
+      }
+    : {
+        title: "",
+        amount: 0,
+        date: today,
+      };
 
   return (
-    <form
-      method="post"
+    <Form
+      method={expenseData ? "patch" : "post"}
       className="flex flex-col rounded-lg bg-gray-100 p-6 shadow-md"
       id="expense-form"
     >
@@ -27,6 +71,7 @@ const ExpenseForm: React.FC = () => {
           type="text"
           id="title"
           name="title"
+          defaultValue={defaultValue?.title}
           required
           maxLength={30}
           className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -45,6 +90,7 @@ const ExpenseForm: React.FC = () => {
             type="number"
             id="amount"
             name="amount"
+            defaultValue={defaultValue?.amount}
             min="0"
             step="0.01"
             required
@@ -62,6 +108,7 @@ const ExpenseForm: React.FC = () => {
             type="date"
             id="date"
             name="date"
+            defaultValue={defaultValue?.date}
             max={today}
             required
             className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -78,9 +125,10 @@ const ExpenseForm: React.FC = () => {
       <div className="form-actions flex items-center justify-between">
         <button
           type="submit"
+          disabled={isSubmitting}
           className="rounded-md bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          Save Expense
+          {isSubmitting ? "Saving..." : "Submit"}
         </button>
         <Link
           className="text-indigo-500 hover:underline"
@@ -91,7 +139,7 @@ const ExpenseForm: React.FC = () => {
           Cancel
         </Link>
       </div>
-    </form>
+    </Form>
   );
 };
 

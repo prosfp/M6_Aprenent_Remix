@@ -63,24 +63,25 @@ Aquí el que necessitem és simplement recuperar i carregar les dades que ens re
 //...
 // GET Expenses
 export async function getExpenses(): Promise<Expense[]> {
-  try {
-    const expenses = await supabase
-      .from("expenses")
-      .select("*")
-      .order("date", { ascending: false });
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .order("date", { ascending: true });
 
-    return expenses;
-  } catch (error) {
+  if (error) {
     console.error("Error getting expenses:", error);
     throw new Error("Failed to get expenses.");
   }
+
+  return data as Expense[]; // Garantim que `data` és una llista d'`Expense`
 }
+
 ```
-Ara al loader hauré d'importar aquesta funció i cridar-la des del `loader`:
+Ara app hauré d'importar aquesta funció i cridar-la des del `loader`:
 
 ```tsx
 export async function loader() {
-  return getExpenses();
+  return await getExpenses();
 }
 ```
 I ara farem servir `useLoaderData` per recuperar les dades al nostre component. Recorda novament, que no necessàriament s'ha de fer ús a la ruta on es troba el `loader`, tot i que en aquest cas sí serà així. 
@@ -102,7 +103,7 @@ Ja hauries de poder veure les dades recuperades de la base de dades.
 
 Hem de saber algunes coses més sobre com Remix gestiona els loaders i les respostes.
 
-El loader quan retorna les dades en realitat el que fa és retornar un Respons.json(). És a dir:
+El loader quan retorna les dades en realitat el que fa és retornar un Response.json(). És a dir:
 
 ```tsx
 export async function loader() {
@@ -143,8 +144,6 @@ A Remix, el `loader` és una funció clau per gestionar dades que es poden rende
 ### **Altres detalls importants**
 - **Errors del loader:** Si el `loader` retorna un error, Remix redirigeix a una pàgina d'error personalitzada o genera un error al servidor (per exemple, amb `throw Response`).
 - **Accions:** Quan realitzes mutacions (com afegir una despesa a `/expenses/add`), l'acció associada al formulari (`action`) s'encarrega al servidor. Aquesta acció pot retornar un `redirect` perquè l'usuari vegi els resultats actualitzats sense necessitat de forçar una recàrrega completa.
-
-Si tens més dubtes o vols veure algun exemple concret, podem treballar sobre un cas pràctic dins el teu projecte!
 
 ---
 **IMPORTANT: Abans de continuar, he fet alguns canvis a l'arxiu `expenses.server.ts` per adaptar-lo millor a la resposta que genera Supabase (que retorna un objecte amb `data` i `error`) i per poder tipar el codi correctament.**
@@ -190,7 +189,7 @@ Amb això podem veure com afegir la nostra nova funció `getExpense` al nostre a
 // expenses.server.ts
 //...
 // GET By ID
-export async function getExpense(id): Promise<Expense> {
+export async function getExpense(id: string): Promise<Expense> {
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
@@ -208,9 +207,10 @@ export async function getExpense(id): Promise<Expense> {
 
 ### Utilitzar les dades carregades al formulari
 
-Primer de tot, gràcies a la ruta dinàmica `/expenses/:id`, podem accedir a l'`id` de la despesa que volem editar. Això ens permetrà carregar les dades correctes al nostre formulari. Afegim el `loader` a la nostra pàgina d'edició de despeses:
+Primer de tot, gràcies a la ruta dinàmica `/expenses/$id`, podem accedir a l'`id` de la despesa que volem editar. Això ens permetrà carregar les dades correctes al nostre formulari. Afegim el `loader` a la nostra pàgina d'edició de despeses:
 
 ```tsx
+// expenses.$id.tsx
 // En aquest cas sí necessito la infromació dels paràmetres de la URL perquè em dona l'ID de l'element que vull editar
 export async function loader({ params }: LoaderFunctionArgs) {
   const expenseId = params.id;

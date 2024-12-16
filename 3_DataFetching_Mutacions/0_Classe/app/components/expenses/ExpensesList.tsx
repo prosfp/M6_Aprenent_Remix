@@ -7,10 +7,7 @@ interface Expense {
   amount: number;
 }
 
-interface ExpensesListProps {
-  expenses: Expense[];
-}
-function ExpensesList({ expenses }: ExpensesListProps) {
+function ExpensesList({ expenses }: { expenses: Expense[] }) {
   return (
     <ol id="expenses-list" className="mx-auto my-8 max-w-lg">
       {expenses.map((expense) => (

@@ -11,13 +11,13 @@ Si et trobes en el punt d'editar un element i recarregues la pàgina, veuràs qu
 
 No has pensat quelcom? Si carreguem totes les despeses, podem saber ja a través d'aquesta crida, quina és la que hauríem de carregar individualment per l'edició oi?
 
-En un escenari així, podríem estalviar-nos aquest segon `loader` que hem posat a la ruta `/expenses/:id` i fer servir les dades que ja tenim carregades a la pàgina.
+En un escenari així, podríem estalviar-nos aquest segon `loader` que hem posat a la ruta `/expenses/$id` i fer servir les dades que ja tenim carregades a la pàgina.
 
 ### Refactoritzant el codi
 
-Anem a comentar el nostre segon `loader` així com l'import de `getExpense` de la ruta `/expenses/:id` i a fer servir les dades que ja tenim carregades a la pàgina.
+Anem a comentar el nostre segon `loader` així com l'import de `getExpense` de la ruta `/expenses/$id` i a fer servir les dades que ja tenim carregades a la pàgina.
 
-Ara el `useLoaderData()` que es troba a `ExpenseForm` retornarà `undefined` perquè la ruta `/expenses/:id` ja no en té.
+Ara el `useLoaderData()` que es troba a `ExpenseForm` retornarà `undefined` perquè la ruta `/expenses/$id` ja no en té.
 
 La ruta pare `expenses` sí que n'hi ha un, però `useLoaderData()` et dona accés al `loader` més proper de la ruta que es troba activa que seria `/expenses/$id`.
 
@@ -48,7 +48,7 @@ import { useMatches } from "react-router-dom";
   // Ara recuperem les dades des el `loader` d'expenses, que ja no és el pare.
   const matches = useMatches();
   // Nosaltres necessitem les dades de la ruta 'routes/_app/expenses/`
-  const matchedRou  te = matches.find(
+  const matchedRoute = matches.find(
     (match) => match.id === "routes/_app.expenses",
   );
   console.log(matchedRoute);
@@ -259,7 +259,6 @@ Ara podem afegir una gestió condicional a l'`Action` de la nostra ruta `id` per
 export async function action({ request, params }: LoaderFunctionArgs) {
   const expenseID = params.id as string;
   // Compte! DELETE ha de ser en majúscula si no fallarà!
-  request.method === "DELETE";
 
   if (request.method === "PATCH") {
     // Vull editar la despesa
@@ -301,5 +300,14 @@ export async function deleteExpense(id: string): Promise<void> {
   }
 }
 ```
+
+I només faltarà afegir la crida a `deleteExpense` dins de l'`Action` quan rebem una petició `DELETE`.
+
+```typescript
+// $id.tsx
+await deleteExpense(expenseID);
+return redirect("/expenses");
+```
+
 
 
