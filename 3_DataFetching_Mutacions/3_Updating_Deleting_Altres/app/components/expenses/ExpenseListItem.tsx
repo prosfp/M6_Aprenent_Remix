@@ -1,4 +1,4 @@
-import { Link } from "@remix-run/react";
+import { Form, Link } from "@remix-run/react";
 import { FaTrash, FaEdit } from "react-icons/fa";
 
 interface ExpenseListItemProps {
@@ -24,12 +24,14 @@ function ExpenseListItem({ id, title, amount }: ExpenseListItemProps) {
 
       {/* Botons d'acció */}
       <div className="flex items-center space-x-4">
-        <button
-          onClick={deleteExpenseItemHandler}
-          className="transform text-xl text-red-500 transition-transform hover:scale-125 hover:text-red-700"
-        >
-          <FaTrash />
-        </button>
+        <Form method="delete" action={`/expenses/${id}`}>
+          <button
+            onClick={deleteExpenseItemHandler}
+            className="transform text-xl text-red-500 transition-transform hover:scale-125 hover:text-red-700"
+          >
+            <FaTrash />
+          </button>
+        </Form>
         <Link
           to={id}
           className="transform text-xl text-blue-500 transition-transform hover:scale-125 hover:text-blue-700"

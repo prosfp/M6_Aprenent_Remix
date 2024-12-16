@@ -71,7 +71,7 @@ const ExpenseForm: React.FC = () => {
 
   return (
     <Form
-      method="post"
+      method={expenseData ? "put" : "post"}
       className="flex flex-col rounded-lg bg-gray-100 p-6 shadow-md"
       id="expense-form"
       //onSubmit={submitHandler}
@@ -124,7 +124,7 @@ const ExpenseForm: React.FC = () => {
             type="date"
             id="date"
             name="date"
-            defaultValue={expenseData?.date}
+            defaultValue={expenseData?.date.toString().slice(0, 10)}
             max={today}
             required
             className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"

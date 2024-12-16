@@ -77,3 +77,37 @@ export async function getExpense(id: string): Promise<Expense> {
 
   return data as Expense; // Garantim que `data` és una llista d'`Expense`
 }
+
+// UPDATE Expense
+export async function updateExpense(
+  id: string,
+  expenseData: Expense,
+): Promise<Expense> {
+  const { data, error } = await supabase
+    .from("expenses")
+    .update({
+      title: expenseData.title,
+      amount: expenseData.amount,
+      date: new Date(expenseData.date).toISOString(),
+    })
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    console.error("Error updating expense:", error);
+    throw new Error("Failed to update expense.");
+  }
+
+  return data as Expense; // Garantim que `data` és del tipus `Expense`
+}
+
+// DELETE Expense
+
+export async function deleteExpense(id: string): Promise<void> {
+  const { error } = await supabase.from("expenses").delete().eq("id", id);
+
+  if (error) {
+    console.error("Error deleting expense:", error);
+    throw new Error("Failed to delete expense.");
+  }
+}

@@ -23,6 +23,7 @@ export default function ExpensesAddPage() {
 export async function action({ request }: ActionFunctionArgs) {
   // formData retorna la promesa de retornar la informació del formulari
   const formData = await request.formData();
+
   // Puc recuperar individualment els valors del formulari amb get() i el nom del camp
   // const title = formData.get("title");
   // const amount = formData.get("amount");
