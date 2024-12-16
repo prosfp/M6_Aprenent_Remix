@@ -33,8 +33,6 @@ export default function ExpensesAddPage() {
 
 export async function action({ request, params }: LoaderFunctionArgs) {
   const expenseID = params.id as string;
-  // Compte! DELETE ha de ser en majúscula si no fallarà!
-  request.method === "DELETE";
 
   if (request.method === "PATCH") {
     // Vull editar la despesa
