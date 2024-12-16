@@ -71,7 +71,7 @@ const ExpenseForm: React.FC = () => {
 
   return (
     <Form
-      method={expenseData ? "put" : "post"}
+      method={expenseData ? "patch" : "post"}
       className="flex flex-col rounded-lg bg-gray-100 p-6 shadow-md"
       id="expense-form"
       //onSubmit={submitHandler}

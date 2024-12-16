@@ -33,8 +33,10 @@ export default function ExpensesAddPage() {
 
 export async function action({ request, params }: LoaderFunctionArgs) {
   const expenseID = params.id as string;
+  console.log(request.method);
 
   if (request.method === "PATCH") {
+    console.log("Updating expense...");
     // Vull editar la despesa
     const formData = await request.formData();
 
