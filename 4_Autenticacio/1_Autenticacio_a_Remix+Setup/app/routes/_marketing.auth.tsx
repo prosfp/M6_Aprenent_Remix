@@ -1,7 +1,7 @@
 import AuthForm from "../components/auth/AuthForm";
 import { redirect, type ActionFunctionArgs } from "@remix-run/node";
 import { validateCredentials } from "../data/validations.server";
-import { signup } from "../data/auth.server";
+import { login, signup } from "../data/auth.server";
 
 export default function AuthPage() {
   return (
@@ -28,13 +28,19 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // Gestió amb les dades
-
-  if (authMode === "login") {
-    // Autenticació (login)
-  } else {
-    // Creació d'usuari (signup)
-    signup({ email, password });
-    return redirect("/expenses");
+  try {
+    if (authMode === "login") {
+      // Autenticació (login)
+      return await login({ email, password });
+    } else {
+      // Creació d'usuari (signup)
+      return await signup({ email, password });
+    }
+  } catch (error) {
+    if (error.status === 422) {
+      // retornem 'Data' a l'Action per tal que ho pugui mostrar també com abans amb la Validació.
+      return { credentials: error.message };
+    }
   }
 
   return {};

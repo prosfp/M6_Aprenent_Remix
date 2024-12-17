@@ -67,7 +67,7 @@ function AuthForm() {
       </p>
       <div className="text-center">
         {validationErrors && (
-          <ul className="mb-4 list-inside list-disc text-red-500">
+          <ul className="mb-4 list-inside text-red-500">
             {Object.values(validationErrors as Record<string, string>).map(
               (error) => (
                 <li key={error}>{error}</li>

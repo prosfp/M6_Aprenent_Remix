@@ -192,7 +192,7 @@ function AuthForm() {
 Això és com ja havíem fet  l'`ExpenseForm`. Pots provar si funciona canviant a l'inspector del navegador les validacions de `email` o `password` per veure com es mostren els errors.
 
 
-### Creant un usuari
+## Creant un usuari
 
 Començarem afegint un arxiu específic sota la carpeta `/data` per a la gestió d'autenticacions d'usuari. 
 
@@ -210,7 +210,7 @@ interface SignupInput {
   password: string;
 }
 
-export async function signUpUser({ email, password }: SignupInput) {
+export async function signup({ email, password }: SignupInput) {
   // 1. Comprovar si l'usuari ja existeix a la taula 'users'
   const { data: user, error: findError } = await supabase
     .from("users")
@@ -224,7 +224,7 @@ Podem encara afinar una mica més, tornant un error més precís si l'usuari ja 
 
 ```typescript
 // auth.server.ts
-export async function signUpUser({ email, password }: SignupInput) {
+export async function signup({ email, password }: SignupInput) {
   // 1. Comprovar si l'usuari ja existeix a la taula 'users'
   const { data: existingUser, error: findError } = await supabase
     .from("users")
@@ -232,15 +232,12 @@ export async function signUpUser({ email, password }: SignupInput) {
     .eq("email", email)
     .single();
 
-  if (findError && findError.code !== "PGRST116") {
-    // Error inesperat en la cerca (excloem "no rows found")
-    throw new Error("Error checking user existence.");
-  }
 
   if (existingUser) {
-    // Si ja existeix un usuari, llença un error 422
-    const error = new Error("This email is already registered. Please log in.");
-    (error as any).status = 422;
+    const error = new Error(
+      "A user with the provided email address exists already.",
+    );
+    (error as any).status = 422; // Afegim status per gestionar-ho després
     throw error;
   }
 }
@@ -259,7 +256,7 @@ Ara ja sí podem crear l'usuari a la base de dades:
 
 ```typescript
 // auth.server.ts
-export async function signUpUser({ email, password }: SignupInput) {
+export async function signup({ email, password }: SignupInput) {
   // 1. Comprovar si l'usuari ja existeix a la taula 'users'
   const { data: existingUser, error: findError } = await supabase
     .from("users")
@@ -267,15 +264,11 @@ export async function signUpUser({ email, password }: SignupInput) {
     .eq("email", email)
     .single();
 
-  if (findError && findError.code !== "PGRST116") {
-    // Error inesperat en la cerca (excloem "no rows found")
-    throw new Error("Error checking user existence.");
-  }
-
-  if (existingUser) {
-    // Si ja existeix un usuari, llença un error 422
-    const error = new Error("This email is already registered. Please log in.");
-    (error as any).status = 422;
+    if (existingUser) {
+    const error = new Error(
+      "A user with the provided email address exists already.",
+    );
+    (error as any).status = 422; // Afegim status per gestionar-ho després
     throw error;
   }
 
@@ -314,5 +307,248 @@ Ara ja tenim la funció `signUpUser` i podem tornar a la nostra lògica de `_mar
 Si proves a fer un signup amb un usuari que no existeixi, hauria de crear-se a la base de dades. Prova-ho!
 
 > Nota: Estem creant usuaris de moment, NO sessions ara per ara!
+
+Prova també a mirar d'afegir un usuari que ja existeix. L'`ErrorBoundary` hauria mostrar l'error que li hem passat. Això no fa massa bona la nostra experiència d'usuari. Haver de tornar a la pàgina de login per tornar a introduir les dades, no sembla la millor idea. 
+
+Com ho faries? Pensa-ho... ja hem implementat abans un `useActionData` per mostrar els errors amb la validació. 
+
+Com pots aconseguir això?
+
+![A user existes](./public/images/existingUser.png)
+
+## Login d'usuari
+
+Primer crearem una funció per fer el login a `auth.server.ts`:
+
+```typescript
+// auth.server.ts
+export async function login({ email, password }: SignupInput) {
+  // 1. Comprovem si l'usuari existeix
+  const { data: existingUser } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  // Si no existeix, tenim un "problema"
+  if (!existingUser) {
+    const error = new Error("Could not log in with the provided credentials.");
+    (error as any).status = 401; // En el fons és un problema d'autenticació
+    throw error;
+  }
+
+  // 2. Comprovar la contrasenya
+  // Hem de gestionar el hash-password i no podem comparlar-lo directament.
+  // Fem servir la funció compare de bcrypt per comparar-los.
+  const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+
+  if (!isPasswordValid) {
+    const error = new Error("Could not log in with the provided credentials.");
+    (error as any).status = 401; // Afegim status per gestionar-ho després
+    throw error;
+  }
+}
+```
+
+1. **Comprova si l'usuari existeix a la base de dades**:
+   - Fa una consulta a Supabase per cercar un usuari amb l'email proporcionat.
+   - Si no existeix, llença un error d'autenticació (`status 401`).
+
+2. **Comprova la contrasenya**:
+   - Utilitza `bcrypt.compare` per comparar la contrasenya proporcionada amb el hash desat a la base de dades.
+   - Si la contrasenya no és vàlida, llença un error d'autenticació (`status 401`).
+
+---
+
+## Sessió & Cookies
+
+Abans de res, repassem com funcionen les cookies i les sessions. La diferència principal entre **cookies** i **sessions** rau en com s'emmagatzemen i gestionen les dades del costat client i servidor:
+
+## 1. **Cookies**
+- **Definició**: Són petits fragments de dades que el servidor envia al navegador del client i aquest guarda localment.
+- **Emmagatzematge**: Les dades s’emmagatzemen **al navegador** (costat client).
+- **Durada**: Pots configurar-ne l'expiració (ex: dies, hores) o fer-les temporals.
+- **Accessibilitat**: Les cookies són accessibles tant pel client (JavaScript) com pel servidor (si no són `httpOnly`).
+- **Seguretat**: 
+   - Les cookies poden ser vulnerables a **robatori** si no estan protegides adequadament.
+   - Opcions com `httpOnly`, `secure`, i `sameSite` milloren la seguretat.
+- **Exemple d’ús**:
+   - Emmagatzemar preferències d'usuari (tema clar o fosc).
+   - Guardar petits identificadors (com un `user_id`).
+
+---
+
+## 2. **Sessions**
+- **Definició**: Són dades emmagatzemades **al servidor** que es vinculen a l’usuari mitjançant un identificador únic.
+- **Emmagatzematge**: 
+   - Al servidor, es guarda la informació real.
+   - Al client, només s'envia un identificador de sessió a través d'una **cookie**.
+- **Durada**: Les sessions solen tenir una **durada limitada** i expiren automàticament després d’inactivitat.
+- **Accessibilitat**: Només el servidor pot accedir a les dades de sessió.
+- **Seguretat**: 
+   - Les sessions són més segures perquè les dades no viatgen amb cada petició, només l’identificador.
+- **Exemple d’ús**:
+   - Gestionar inici de sessió d’usuaris (autenticació).
+   - Mantenir l’estat d'una compra al carro.
+
+---
+## **Exemple Pràctic**
+
+1. **Cookie**:
+   - Guardes una cookie amb `theme: "dark"`.
+   - Cada vegada que l'usuari visita el lloc, llegeixes aquesta cookie i actives el tema fosc.
+
+2. **Sessió**:
+   - Quan un usuari inicia sessió, es crea una sessió al servidor.
+   - S’envia una cookie amb l’**ID de sessió** (`session_id: "123456"`).
+   - El servidor usa aquest ID per identificar l'usuari i carregar-ne les dades.
+
+---
+
+## **Implementant Sessions amb Remix**
+
+En el cas de Remix per gestionar una sessió necessitem un hook de Remix anomenat `createCookieSessionStorage`. Aquest hook ens permetrà crear una sessió amb una cookie segura.
+
+```typescript
+import { createCookieSessionStorage } from "@remix-run/node";
+
+// Crear l'emmagatzematge de sessió amb configuració de la cookie
+export const { getSession, commitSession, destroySession } =
+  createCookieSessionStorage({
+    cookie: {
+      // 1. name: Nom de la cookie que s'emmagatzemarà al navegador del client.
+      // Exemple: "session"
+      name: "session",
+
+      // 2. secrets: Clau secreta utilitzada per signar i validar les cookies.
+      // Es fa servir per assegurar la integritat i evitar manipulacions.
+      // Pots afegir múltiples claus per a la rotació de secrets.
+      secrets: ["my_secret_key"],
+
+      // 3. sameSite: Política SameSite per protegir contra atacs CSRF.
+      // - "lax": La cookie només s'envia en peticions de mateix origen o navegació parcial.
+      // - "strict": La cookie no s'envia amb peticions entre orígens.
+      // - "none": La cookie s'envia en totes les peticions (requereix `secure`).
+      sameSite: "lax",
+
+      // 4. path: La ruta del domini on la cookie és accessible.
+      // "/" indica que és accessible a totes les rutes del domini.
+      path: "/",
+
+      // 5. httpOnly: Fa que la cookie només sigui accessible des del servidor.
+      // Evita que JavaScript del client accedeixi a la cookie (millora la seguretat).
+      httpOnly: true,
+
+      // 6. secure: Indica si la cookie només s'ha d'enviar en connexions HTTPS.
+      // Millora la seguretat i s'hauria d'habilitar en producció.
+      // Aquí s'utilitza `process.env.NODE_ENV === "production"` per activar-ho només en prod.
+      secure: process.env.NODE_ENV === "production",
+    },
+  });
+
+```
+
+Per tant, al nostre `auth.server.ts` podem fer servir aquesta funció per crear una sessió quan l'usuari faci login:
+
+```typescript
+// auth.server.ts
+
+//...
+
+// Obtenim el secret de la sessió de les variables d'entorn (.env)
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+// Creem una nova instància de CookieSessionStorage
+const sessionStorage = createCookieSessionStorage({
+  cookie: {
+    secure: process.env.NODE_ENV === "production", // Només HTTPS en desenvolupament
+    secrets: [SESSION_SECRET], // Array de secrets per a signar les cookies
+    name: "supabaseSession", // Nom de la cookie
+    sameSite: "lax", // Protecció contra CSRF
+    maxAge: 30 * 24 * 60 * 60, // 30 dies
+    httpOnly: true, // No accessible via JavaScript
+  },
+});
+//...
+```
+
+Recorda afegir el secret de la sessió a les variables d'entorn del teu projecte (`.env`). De moment, pots posar un valor aleatori com a clau secreta.
+
+```bash
+SESSION_SECRET=super_secret_key
+```
+## Creant una cookie de sessió
+
+Un cop tenim la sessió creada, podem "demanar" una sessió amb `getSession`:
+
+```typescript
+async function createUserSession(userId: string, redirectPath: string) {
+  // Obtenir la sessió actual o crear-ne una nova
+  const session = await sessionStorage.getSession();
+
+  // Estableix l'identificador d'usuari dins de la sessió
+  session.set("userId", userId);
+
+  // Retorna una redirecció a la ruta especificada amb la sessió a les capçaleres
+  return redirect(redirectPath, {
+    headers: {
+      "Set-Cookie": await sessionStorage.commitSession(session), // Guarda i retorna la cookie
+    },
+  });
+}
+```
+
+### On ho fem servir ara? Doncs quan l'usuari fa login, és clar!
+
+Al final de la funció `login` de `auth.server.ts`, crida la funció `createUserSession` per crear una sessió amb l'`id` de l'usuari:
+
+```typescript
+// auth.server.ts
+//...
+export async function login...
+//...
+
+// 3. Crear la sessió de l'usuari
+  return createUserSession(existingUser.id, "/expenses"); // Redirecció a la pàgina d'Expenses
+```
+
+I allà on gestionem la lògica d'autenticació, a `_marketing.auth.tsx`, crida la funció `login`:
+
+```typescript
+// _marketing.auth.tsx
+//...
+// Gestió amb les dades
+  try {
+    if (authMode === "login") {
+      // Autenticació (login)
+      return await login({ email, password });
+    } else {
+      // Creació d'usuari (signup)
+      await signup({ email, password });
+      return redirect("/expenses");
+    }
+  } catch (error) {
+    if (error.status === 422) {
+      // retornem 'Data' a l'Action per tal que ho pugui mostrar també com abans amb la Validació.
+      return { credentials: error.message };
+    }
+  }
+  //...
+```
+Fixa't que hem de retornar la funció de login perquè necessitem que aquesta `Acció` retorni aquesta redirecció i a més de configurar correctament les cookies anirem directament a la pàgina d'`Expenses`. 
+
+Això haurà de ser el mateix amb el signup, per tant podrem treure el `redirect` de dins del `else` i fer que ho faci directament a través de les credencials. Podem logejar l'usuari immediatament després de crear-lo no?
+
+```typescript
+// auth.server.ts
+//...
+  // 4. Retornar la informació del nou usuari
+  //return newUser;
+  return createUserSession(newUser.id, "/expenses");
+  //...
+```
+Temps de comprovar-ho i veure a 'DevTools' si tenim la cookie de sessió creada.
+
+Si tot ha anat bé, podrem fer ús d'aquesta 'cookie' per identificar l'usuari a l'hora de fer les peticions.
 
 

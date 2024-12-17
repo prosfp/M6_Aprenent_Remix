@@ -10,3 +10,8 @@ export type ValidationErrors = {
   amount?: string;
   date?: string;
 };
+
+export interface SignupInput {
+  email: string;
+  password: string;
+}
