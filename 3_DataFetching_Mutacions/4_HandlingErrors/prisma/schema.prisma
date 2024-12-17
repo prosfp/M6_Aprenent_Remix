@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+/// El model `Expense` representa un registre de despesa a la base de dades.
+/// 
+/// Camps:
+/// - `id`: Un identificador únic per a la despesa, generat automàticament. Mapat a la columna de la base de dades `_id`.
+/// - `title`: El títol de la despesa.
+/// - `amount`: La quantitat de diners gastats, emmagatzemada com un número de punt flotant.
+/// - `date`: La data de la despesa.
+/// - `dateAdded`: La marca de temps quan es va afegir la despesa, establerta automàticament a la data i hora actual.
+model Expense {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  title String 
+  amount Float
+  date DateTime
+  dateAdded   DateTime @default(now())
+}
+
+// id és una mica especial. Ha de contenir:
+// - @id: Indica que aquest camp és l'identificador únic del model.
+// - @default(auto()): Indica que el valor d'aquest camp s'ha de generar automàticament.
+// - @map("_id"): Indica que aquest camp s'ha de mapejar a la columna "_id" de la base de dades.
+// - @db.ObjectId: Indica que aquest camp ha de ser un ObjectId de MongoDB.

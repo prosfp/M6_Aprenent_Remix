@@ -218,24 +218,22 @@ Aquí necessitem però fer servir un mètode `DELETE`. Per això, farem servir u
 I on anirà aquest request? Pensa-ho bé... 
 
 * On es troba aquest component? Doncs forma part de `ExpenseList`. 
-* I on es troba `ExpenseList`? Doncs l'injectem a `Expense` aixi que:
+* I on es troba `ExpenseList`? L'estem injectant a `Expense` aixi que:
 * Tècnicament hauríem d'implementar aquí el nostre `Action`!
-* Però no seria més pràctic enviar-ho a la ruta `id` i allà gestionar-ho?
-
-Com ho fem això? 
+* Però no seria més pràctic enviar-ho a la ruta `id`, on ja tenim un `Action` que ens permet gestionar l'actualització de la despesa? Com ho fem això? 
 
 ```typescript
 // ExpenseListItem.tsx
         <Form method="delete" action={`/expenses/${id}`}>
 //...
 ```
-Amb això, quan fem click al botó de borrar, ens redirigirà a la ruta `/expenses/$id` amb el mètode `DELETE`.
-
-I, oh sorpresa, aqui ja tenim un `Action` per gestionar l'edició de la despesa. 
+Amb això, quan fem click al botó de borrar, ens redirigirà a la ruta `/expenses/$id` i generarà una petició amb mètode `DELETE`, que serà interceptada per l'`Action` de la ruta `$id`.
 
 Com podem gestionar dues peticions en un sol `Action`?
 
-Abans de res, torna a fer un cop d'ull a `ExpenseForm`. Ara per ara el mètode que hi ha posat hardcoded és "post". Això no és del tot correcte. 
+Abans de res, torna a fer un cop d'ull a `ExpenseForm`. Ara per ara el mètode que té el formulari per defecte és "post". Això no és del tot correcte. 
+
+Ara per ara, quan editem una despesa, el formulari envia una petició `POST` en lloc de `PATCH`.
 
 el `Form` en realitat hauria de contemplar: 
  - Si tenim `expenseData` (estem editant) el mètode hauria de ser `PATCH`.
@@ -249,7 +247,8 @@ Modifiquem això doncs:
       method={expenseData ? "patch" : "post"}
 //...
 ```
-Això farà que ara s'enviï un `Patch` quan editi. 
+Això farà que ara s'enviï un `Patch` quan editi. A l'acció ja podem diferenciar quan l'activació de la ruta ha vingut donada per un `PATCH` o un `DELETE`.
+
 
 ### Gestionant dues peticions en un sol Action
 
@@ -308,6 +307,140 @@ I només faltarà afegir la crida a `deleteExpense` dins de l'`Action` quan rebe
 await deleteExpense(expenseID);
 return redirect("/expenses");
 ```
+
+### Refactoritzant amb Fetcher - Un form que no genera navegació
+
+Aquest enfocament és més net, modular i eficient, ja que no depèn de la navegació de la pàgina i et permet esborrar una despesa de manera asíncrona **sense provocar una recàrrega de la pàgina**.
+
+### **Codi corregit amb `useFetcher`**
+
+Veiem com modificar `ExpenseListItem` amb **`useFetcher`** per la funcionalitat de Delete:
+
+#### **Component `ExpenseListItem`**
+
+```tsx
+import { useFetcher, Link } from "@remix-run/react";
+import { FaTrash, FaEdit } from "react-icons/fa";
+
+interface ExpenseListItemProps {
+  id: string;
+  title: string;
+  amount: number;
+}
+
+function ExpenseListItem({ id, title, amount }: ExpenseListItemProps) {
+  const fetcher = useFetcher();
+  const isDeleting = fetcher.state === "submitting";
+
+  return (
+    <div className="flex w-full items-center justify-between p-4">
+      {/* Si s'està eliminant, mostrem només el text "Deleting..." */}
+      {isDeleting ? (
+        <div className="flex w-full items-center justify-center">
+          <p className="animate-pulse text-xl font-semibold text-gray-500">
+            Deleting...
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Informació de la despesa */}
+          <div className="flex flex-col">
+            <h2 className="text-xl font-bold">{title}</h2>
+            <p className="text-lg">${amount.toFixed(2)}</p>
+          </div>
+
+          {/* Botons d'acció */}
+          <div className="flex items-center space-x-4">
+            <fetcher.Form method="delete" action={`/expenses/${id}`}>
+              <button
+                type="submit"
+                disabled={isDeleting}
+                className="transform text-xl text-red-500 transition-transform hover:scale-125 hover:text-red-700"
+              >
+                <FaTrash />
+              </button>
+            </fetcher.Form>
+
+            <Link
+              to={id}
+              className="transform text-xl text-blue-500 transition-transform hover:scale-125 hover:text-blue-700"
+            >
+              <FaEdit />
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default ExpenseListItem;
+```
+
+---
+
+### **Explicació del codi**
+
+1. **`useFetcher`:**
+   - Crea una instància de `fetcher` que s'utilitza per enviar la petició `DELETE` a la ruta `/expenses/${id}`.
+
+2. **Estat de l'eliminació:**
+   - `fetcher.state === "submitting"`: Indica que la petició està en procés.
+   - Això permet deshabilitar el botó i mostrar un estat visual ("Deleting...") per millorar l'experiència d'usuari.
+   - Fem que l'expense passi a ser un bloc simplement mostrant "Deleting..." mentre s'elimina.
+
+3. **Acció independent:**
+   - El formulari `fetcher.Form` envia la petició directament a `/expenses/${id}` sense afectar la ruta actual.
+---
+
+### **Per què és millor amb `useFetcher`?**
+
+1. **No bloqueja la pàgina actual:**
+   - Pots eliminar un element sense recarregar ni redirigir.
+
+2. **Estats reactius (submitting/loading):**
+   - Pots mostrar un spinner o missatge ("Deleting...") mentre s'elimina l'element.
+
+3. **Independent de la ruta:**
+   - El `fetcher.Form` funciona independentment de la ruta actual. Pots reutilitzar-lo en modals, components fills, etc.
+
+Us aconsello fer un cop d'ull a la següent entrada de Remix: [Forms VS Fetcher](https://remix.run/docs/ja/main/discussion/form-vs-fetcher) per aprofundir en el funcionament de `useFetcher` i altres mètodes de fetch.
+
+Això no és tot! El `UseFetcher` ens pot anar molt bé per poder gestionar per exemple un missatge de confirmació abans de fer l'acció de borrar.
+
+Hem de fer una crida programàtica en aquest cas, és a dir, crear-nos una funció de `submit` on gestionarem el missatge de confirmació.
+
+```typescript
+// ExpenseListItem.tsx
+//...
+  // Handler per confirmar i enviar la petició DELETE
+  function confirmDelete(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault(); // Evitem l'enviament immediat del formulari
+    const isConfirmed = window.confirm("Are you sure you want to delete this expense?");
+    if (isConfirmed) {
+      fetcher.submit(null, { method: "delete", action: `/expenses/${id}` });
+    }
+  }
+//...
+```
+I ara simplement cridem aquesta funció en el `onClick` del botó de borrar.
+
+```typescript
+// ExpenseListItem.tsx
+//...
+  <fetcher.Form method="delete" action={`/expenses/${id}`}>
+      <button
+        type="button" // Canviem a button per evitar enviament automàtic
+        onClick={confirmDelete}
+        disabled={isDeleting}
+        className="transform text-xl text-red-500 transition-transform hover:scale-125 hover:text-red-700"
+      >
+        <FaTrash />
+      </button>
+  </fetcher.Form>
+//...
+```
+Amb això, quan l'usuari faci clic al botó de borrar, es mostrarà un missatge de confirmació abans de fer l'acció de borrar.
 
 
 
