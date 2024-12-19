@@ -25,7 +25,10 @@ import supabase from "../utils/supabaseClient";
 import { Expense } from "../types/interfaces"; // Defineix la interfície Expense correctament
 
 // ADD Expense
-export async function addExpense(expenseData: Expense): Promise<Expense> {
+export async function addExpense(
+  expenseData: Expense,
+  userId: string,
+): Promise<Expense> {
   const { data, error } = await supabase
     .from("expenses")
     .insert([
@@ -33,6 +36,7 @@ export async function addExpense(expenseData: Expense): Promise<Expense> {
         title: expenseData.title,
         amount: expenseData.amount,
         date: new Date(expenseData.date).toISOString(),
+        user_id: userId,
       },
     ])
     .single(); // Retorna només el primer element com a objecte sense cap array.
@@ -48,10 +52,11 @@ export async function addExpense(expenseData: Expense): Promise<Expense> {
 }
 
 // GET Expenses
-export async function getExpenses(): Promise<Expense[]> {
+export async function getExpenses(userId: string): Promise<Expense[]> {
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
+    .eq("user_id", userId)
     .order("date", { ascending: true });
 
   if (error) {

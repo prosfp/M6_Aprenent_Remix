@@ -4,6 +4,7 @@ import Modal from "../components/util/Modal";
 import { ActionFunctionArgs, redirect } from "@remix-run/node";
 import { addExpense } from "../data/expenses.server";
 import { validateExpenseInput } from "../data/validations.server";
+import { requireUserSession } from "../data/auth.server";
 
 export default function ExpensesAddPage() {
   const navigate = useNavigate();
@@ -21,6 +22,9 @@ export default function ExpensesAddPage() {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
+  // recuperem les dades de sessió de l'usuari
+  const userId = await requireUserSession(request);
+
   // formData retorna la promesa de retornar la informació del formulari
   const formData = await request.formData();
 
@@ -44,7 +48,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   console.log(formData, expenseData);
-  await addExpense(expenseData);
+  await addExpense(expenseData, userId);
 
   // És habitual retornar un redirect després d'una mutació.
   return redirect("/expenses");

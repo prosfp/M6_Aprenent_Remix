@@ -1,4 +1,8 @@
+import * as dotenv from "dotenv";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+// Carregar variables d'entorn
+dotenv.config();
 
 const supabaseUrl: string = "https://vsyidbwwlamucmzjqpca.supabase.co";
 const supabaseKey: string | undefined = process.env.SUPABASE_KEY;

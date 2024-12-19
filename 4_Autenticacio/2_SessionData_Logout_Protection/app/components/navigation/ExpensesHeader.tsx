@@ -1,8 +1,10 @@
-import { NavLink } from "@remix-run/react";
+import { Form, Link, NavLink, useLoaderData } from "@remix-run/react";
 import Logo from "../util/Logo";
 import { FC } from "react";
 
 const ExpensesHeader: FC = () => {
+  const userID = useLoaderData<string>();
+
   return (
     <header className="flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white shadow-lg">
       {/* Logo */}
@@ -43,9 +45,14 @@ const ExpensesHeader: FC = () => {
 
       {/* Call to Action Navigation */}
       <nav id="cta-nav">
-        <button className="rounded-lg bg-white px-4 py-2 text-blue-600 shadow-md transition-all duration-300 hover:bg-blue-100">
-          Logout
-        </button>
+        <Form action="/logout" method="post">
+          <button
+            type="submit"
+            className="rounded-lg bg-white px-4 py-2 text-blue-600 shadow-md transition-all duration-300 hover:bg-blue-100"
+          >
+            Logout
+          </button>
+        </Form>
       </nav>
     </header>
   );

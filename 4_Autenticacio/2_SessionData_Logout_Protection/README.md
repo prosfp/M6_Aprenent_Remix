@@ -153,7 +153,7 @@ Si ho proes, veuràs que quan fas clic al botó de "Logout", la sessió de l'usu
 
 Podràs veure que la cookie de sessió s'ha eliminat a través de les eines de desenvolupament del navegador (existeix la sessió, però no hi ha cap valor).
 
-### Protegint Rutes
+## Protegint Rutes
 
 Segurament t'estaràs preguntant com evitar que els usuaris que no han iniciat sessió accedeixin a rutes protegides.
 
@@ -235,4 +235,120 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return getExpenses();
 }
 ```
+## Connectant Usuaris i Expenses
 
+Ha arribat el moment de connectar els nous models d'usuaris i despeses. 
+
+Si no ho has provat ja, veuràs que ara mateix les nostres funcions relatives a `expenses` no són funcionals. Hem d'incorporar la informació d'usuari a les despeses.
+
+Necessitarem conèixer l'`userId` de l'usuari que ha iniciat sessió per poder fer aquesta connexió.
+
+Anem a revisar el nostre codi de `expenses.server.ts` i modifiquem la funció `addExpense` perquè també accepti un `userId`.
+
+```typescript
+// expenses.server.ts
+// ...
+export async function addExpense(
+  expenseData: Expense,
+  userId: string,
+): Promise<Expense> {
+  const { data, error } = await supabase
+    .from("expenses")
+    .insert([
+      {
+        title: expenseData.title,
+        amount: expenseData.amount,
+        date: new Date(expenseData.date).toISOString(),
+        user_id: userId,
+      },
+    ])
+    .single(); // Retorna només el primer element com a objecte sense cap array.
+
+  console.log(data);
+
+  if (error) {
+    console.error("Error adding expense:", error);
+    throw new Error("Failed to add expense.");
+  }
+
+  return data as Expense; // Garantim que `data` és del tipus `Expense`
+}
+//...
+```
+Simplement hem afegit un nou paràmetre `userId` a la funció `addExpense` i l'hem passat a la nostra crida a la base de dades.
+
+Ja tenim "programat" a **supaBase** la relació directa entre les despeses i els usuaris.
+
+També haurem de modificar `getExpenses`, en el cas de supaBase afegint `.eq("user_id", userId)` a la crida. Afegeix-ho a la teva funció `getExpenses` de `expenses.server.ts`.
+
+
+D'acord, ara que ja tenim aquesta part, hem de veure com li passem aquest `userId`. Això ho podem obtenir a través de la funció que hem implementat anteriorment `requireUserSession` quan comprovem que l'usuari ha iniciat sessió.
+
+Tenim prou retornant el `userId` a la funció: 
+
+```typescript
+// auth.server.ts
+export async function requireUserSession(request: Request) {
+  const userId = await getUserFromSession(request);
+
+  if (!userId) {
+    // Si no hi ha cap identificador d'usuari, redirigim a la pàgina d'autenticació
+    throw redirect("/auth?mode=login");
+  }
+
+  return userId;
+}
+```
+I novament al `loader` passem aquesta informació a `getExpenses`: 
+
+```typescript
+// expenses.tsx
+//...
+export async function loader({ request }: LoaderFunctionArgs) {
+  const userId = await requireUserSession(request);
+
+  return await getExpenses(userId);
+}
+```
+
+També haurem de modificar `expenses.add.tsx` perquè passi el `userId` a la funció `addExpense`.
+
+```typescript
+// expenses.add.tsx
+export async function action({ request }: ActionFunctionArgs) {
+  // recuperem les dades de sessió de l'usuari
+  const userId = await requireUserSession(request);
+  //...
+  await addExpense(expenseData, userId);
+  //...
+}
+```
+
+Et quedarà també gestionar la informaicó del userId  `expenses.analysis.tsx`. 
+
+Un últim detall! Tenim pendent modificar també el `logout` de l'altre navegador! Modifica la lògica perquè et sigui també funcional. 
+
+
+Ja ho tens! Prova la teva aplicació i mira la base de dades de 
+
+> **NOTA**: Per poder fer un `Build` i que et funcioni el projecte en "Producció" amb `npm run start` hauràs d'actualitzar la manera ne com s'ipmorten les variables d'entorn:
+
+```typescript
+// supabaseClients.ts
+import * as dotenv from "dotenv";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+// Carregar variables d'entorn
+dotenv.config();
+
+const supabaseUrl: string = "https://vsyidbwwlamucmzjqpca.supabase.co";
+const supabaseKey: string | undefined = process.env.SUPABASE_KEY;
+
+if (!supabaseKey) {
+  throw new Error("Missing SUPABASE_KEY environment variable");
+}
+
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+
+export default supabase;
+```

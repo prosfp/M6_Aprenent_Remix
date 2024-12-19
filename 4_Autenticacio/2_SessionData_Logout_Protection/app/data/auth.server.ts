@@ -80,6 +80,8 @@ export async function requireUserSession(request: Request) {
     // Si no hi ha cap identificador d'usuari, redirigim a la pàgina d'autenticació
     throw redirect("/auth?mode=login");
   }
+
+  return userId;
 }
 
 // Funció per registrar un nou usuari

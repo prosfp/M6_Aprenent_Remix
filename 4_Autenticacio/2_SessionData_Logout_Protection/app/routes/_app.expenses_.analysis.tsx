@@ -26,7 +26,7 @@ export default function ExpensesAnalysisPage() {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await requireUserSession(request);
+  const userId = await requireUserSession(request);
 
   const expenses = await getExpenses(userId);
 
