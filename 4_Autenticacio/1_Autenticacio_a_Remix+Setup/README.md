@@ -291,7 +291,7 @@ export async function signup({ email, password }: SignupInput) {
 }
 ```
 
-Ara ja tenim la funció `signUpUser` i podem tornar a la nostra lògica de `_marketing.auth.tsx` per cridar-la quan es faci un signup.
+Ara ja tenim la funció `signup` i podem tornar a la nostra lògica de `_marketing.auth.tsx` per cridar-la quan es faci un signup.
 
 ```typescript
   // Gestió amb les dades

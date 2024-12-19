@@ -4,6 +4,9 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteError,
+  isRouteErrorResponse,
+  Link,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 
@@ -36,12 +39,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="min-h-screen bg-gradient-to-r from-indigo-500 to-indigo-900">
+      <body className="min-h-screen bg-gradient-to-r from-indigo-500 to-indigo-900 text-white">
         {children}
         <ScrollRestoration />
         <Scripts />
       </body>
     </html>
+  );
+}
+
+export function ErrorBoundary() {
+  console.log("ErrorBoundary");
+  const error = useRouteError();
+
+  let title = "An error occurred";
+  let message = "Something went wrong. Please try again later.";
+
+  if (isRouteErrorResponse(error)) {
+    // Errors de resposta HTTP (404, 500, etc.)
+    title = error.statusText;
+    message = error.data?.message || message;
+  } else if (error instanceof Error) {
+    // Errors inesperats (excepcions)
+    message = error.message;
+  }
+
+  return (
+    <Layout>
+      <main className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+        <h1 className="mb-4 text-4xl font-bold">{title}</h1>
+        <p className="mb-6 text-lg">{message}</p>
+        <Link
+          to="/"
+          className="rounded bg-white px-4 py-2 font-medium text-indigo-600 hover:bg-gray-200"
+        >
+          Back to safety
+        </Link>
+      </main>
+    </Layout>
   );
 }
 

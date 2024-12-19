@@ -1,11 +1,5 @@
-import React from "react";
 import ExpenseListItem from "./ExpenseListItem";
-
-interface Expense {
-  id: string;
-  title: string;
-  amount: number;
-}
+import { Expense } from "../../types/interfaces";
 
 function ExpensesList({ expenses }: { expenses: Expense[] }) {
   return (
@@ -16,7 +10,7 @@ function ExpensesList({ expenses }: { expenses: Expense[] }) {
           className="mx-4 my-6 flex items-baseline justify-between rounded-lg bg-indigo-300 p-4 text-gray-100"
         >
           <ExpenseListItem
-            id={expense.id}
+            id={expense.id ?? "default-id"}
             title={expense.title}
             amount={expense.amount}
           />

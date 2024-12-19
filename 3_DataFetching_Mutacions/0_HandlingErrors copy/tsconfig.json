@@ -8,7 +8,8 @@
     "**/.client/**/*.tsx",
     "app/routes",
     "app/route",
-    "app/routes/.expenses._index.tsx"
+    "app/routes/.expenses._index.tsx",
+    "app/data/database.server.ts"
   ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],

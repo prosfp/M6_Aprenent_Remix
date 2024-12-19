@@ -1,10 +1,9 @@
 import Modal from "../components/util/Modal";
 import ExpenseForm from "../components/expenses/ExpenseForm";
 import { redirect, useNavigate } from "@remix-run/react";
-import { ActionFunctionArgs } from "@remix-run/node";
-import { validateExpenseInput } from "../data/validations.server";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { deleteExpense, updateExpense } from "../data/expenses.server";
-//import { LoaderFunctionArgs } from "@remix-run/node";
+import { validateExpenseInput } from "../data/validations.server";
 //import { getExpense } from "../data/expenses.server";
 
 export default function ExpensesAddPage() {
@@ -22,11 +21,25 @@ export default function ExpensesAddPage() {
   );
 }
 
-export async function action({ request, params }: ActionFunctionArgs) {
+// En aquest cas sí necessito la infromació dels paràmetres de la URL perquè em dona l'ID de l'element que vull editar
+// export async function loader({ params }: LoaderFunctionArgs) {
+//   const expenseId = params.id;
+//   if (!expenseId) {
+//     throw new Error("Expense ID is required");
+//   }
+//   const expense = await getExpense(expenseId);
+//   return expense;
+// }
+
+export async function action({ request, params }: LoaderFunctionArgs) {
   const expenseID = params.id as string;
+  console.log(request.method);
 
   if (request.method === "PATCH") {
+    console.log("Updating expense...");
+    // Vull editar la despesa
     const formData = await request.formData();
+
     const expenseData = {
       title: formData.get("title") as string, // hauria de ser un string sempre i ens evita error TS
       amount: parseFloat(formData.get("amount") as string), // Converteix a número
@@ -34,21 +47,20 @@ export async function action({ request, params }: ActionFunctionArgs) {
     };
 
     try {
+      // Validem les dades abans de fer la mutació
       validateExpenseInput(expenseData);
     } catch (error) {
+      // En aquest cas ens volem assegurar que l'usuari vegi els errors que han provocat aquest error de validació
       return error;
     }
 
-    await updateExpense(expenseID, expenseData);
-  } else if (request.method === "DELETE") {
-    //Haurem de fer la crida a la funció delete
-    await deleteExpense(expenseID);
-  }
-  return redirect("/expenses");
-}
+    console.log(expenseData);
 
-// export async function loader({ params }: LoaderFunctionArgs) {
-//   const expenseId = params.id;
-//   const expense = await getExpense(expenseId);
-//   return expense;
-// }
+    await updateExpense(expenseID, expenseData);
+    return redirect("/expenses");
+  } else if (request.method === "DELETE") {
+    // Aquí no vull modificar res, només eliminar
+    await deleteExpense(expenseID);
+    return redirect("/expenses");
+  }
+}

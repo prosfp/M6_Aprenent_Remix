@@ -8,6 +8,7 @@ interface ExpenseListItemProps {
 }
 
 function ExpenseListItem({ id, title, amount }: ExpenseListItemProps) {
+  // Per poder passar l'id com a part de la ruta, necessitem convertir-lo a string
   id = id.toString();
 
   return (

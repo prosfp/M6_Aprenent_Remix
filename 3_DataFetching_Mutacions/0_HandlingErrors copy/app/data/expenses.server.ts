@@ -1,7 +1,29 @@
-import { Expense } from "../../types/interfaces";
-import supabase from "../utils/supabaseClient";
+// AMB ATLAS DE MONGODB + PRISMA
+// import { prisma } from "./database.server";
 
-// CREATE/ADD Expense
+// export async function addExpense(expenseData: Expense) {
+//   console.log("Adding expense:", expenseData);
+//   try {
+//     await prisma.expense.create({
+//       data: {
+//         title: expenseData.title,
+//         // L'operador + permet de convertir une string en number que és el que espera la BD
+//         amount: +expenseData.amount,
+//         // new Date(expenseData.date) permet de convertir la string en date que és el que espera la BD
+//         date: new Date(expenseData.date),
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error adding expense:", error);
+//     throw error;
+//   }
+// }
+
+// AMB SUPABASE I EL SEU CLIENT
+
+import supabase from "../utils/supabaseClient";
+import { Expense } from "../types/interfaces"; // Defineix la interfície Expense correctament
+
 // ADD Expense
 export async function addExpense(expenseData: Expense): Promise<Expense> {
   const { data, error } = await supabase
@@ -80,6 +102,7 @@ export async function updateExpense(
 }
 
 // DELETE Expense
+
 export async function deleteExpense(id: string): Promise<void> {
   const { error } = await supabase.from("expenses").delete().eq("id", id);
 

@@ -55,6 +55,33 @@ export async function getUserFromSession(request: Request) {
   return userId;
 }
 
+// Funció per tancar la sessió de l'usuari
+export async function destroyUserSession(request: Request) {
+  // Obtenim la cookie de sessió a través de les capçaleres de la petició
+  // i amb la Cookie obtenim l'objecte de sessió --> sessionStorage
+  const session = await sessionStorage.getSession(
+    request.headers.get("Cookie"),
+  );
+
+  // Generem una cookie buida per remplaçar la cookie actual al navegador
+  // Redirigim l'usuari a la pàgina principal
+  return redirect("/", {
+    headers: {
+      "Set-Cookie": await sessionStorage.destroySession(session),
+    },
+  });
+}
+
+// Funció per comprovar si l'usuari està autenticat
+export async function requireUserSession(request: Request) {
+  const userId = await getUserFromSession(request);
+
+  if (!userId) {
+    // Si no hi ha cap identificador d'usuari, redirigim a la pàgina d'autenticació
+    throw redirect("/auth?mode=login");
+  }
+}
+
 // Funció per registrar un nou usuari
 export async function signup({ email, password }: SignupInput) {
   // 1. Comprovar si l'usuari ja existeix a la base de dades

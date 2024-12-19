@@ -1,39 +1,47 @@
 import {
   Form,
+  Link,
   useActionData,
-  //useLoaderData,
   useMatches,
   useNavigation,
   useParams,
 } from "@remix-run/react";
-import { Link } from "@remix-run/react";
-import { Expense } from "../../../types/interfaces";
+import React from "react";
 
 interface ValidationErrors {
-  [key: string]: string;
+  [key: string]: string; // Clau string i valor string
+}
+
+// En aquest cas fem servir una interface local ja que ens arriba tot serialitzat (cadenes) i no podem fer servir la interfície global
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  date: string; // ISO string
 }
 
 const ExpenseForm: React.FC = () => {
   const today = new Date().toISOString().slice(0, 10); // yields something like 2023-09-10
+
+  // Hem d'assegurar a TS que validationErrors és un objecte amb claus string i valors string
   const validationErrors = useActionData<ValidationErrors>();
 
-  const navigation = useNavigation();
-
-  const isSubmitting = navigation.state !== "idle";
-
-  // Necessitaré saber els "params" (URL)
+  // Necessitaré el paràmetre id per recuperar les dades de la despesa que vull editar
   const params = useParams();
+  console.log(params);
 
+  // En el cas de l'edició de despeses, fem servir les dades que ens venen del loader cridat a través de /$id:
+  //const expenseData: Expense = useLoaderData();
+
+  // Ara recuperem les dades des el `loader` d'expenses, que ja no és el pare.
   const matches = useMatches();
-
-  console.log(matches);
-
+  // Nosaltres necessitem les dades de la ruta 'routes/_app/expenses/`
   const matchedRoute = matches.find(
     (match) => match.id === "routes/_app.expenses",
   );
+  console.log(matchedRoute);
 
-  //const expenseData: Expense = useLoaderData();
-
+  // Suposem que sempre hi haurà dades. Si no n'hi ha, posem valors per defecte.
   const expenseData = (matchedRoute?.data as Expense[])?.find(
     ({ id }) => id == params.id,
   ) || {
@@ -42,23 +50,31 @@ const ExpenseForm: React.FC = () => {
     date: today,
   };
 
-  const defaultValue = expenseData
-    ? {
-        title: expenseData.title,
-        amount: expenseData.amount,
-        date: new Date(expenseData.date).toISOString().slice(0, 10),
-      }
-    : {
-        title: "",
-        amount: 0,
-        date: today,
-      };
+  console.log(expenseData);
+
+  const navigation = useNavigation();
+
+  // si no està en estat idle, vol dir que està enviant dades
+  const isSubmitting = navigation.state !== "idle";
+
+  // const submit = useSubmit();
+
+  // function submitHandler(event) {
+  //   event.preventDefault();
+  //   // Fer la teva propia validació per exemple.
+  //   //...
+  //   submit(event.target, {
+  //     // action: "/expenses/add", // Això no cal perquè ja ho fa el formulari
+  //     method: "post",
+  //   });
+  // }
 
   return (
     <Form
       method={expenseData ? "patch" : "post"}
       className="flex flex-col rounded-lg bg-gray-100 p-6 shadow-md"
       id="expense-form"
+      //onSubmit={submitHandler}
     >
       <p className="mb-4">
         <label
@@ -71,7 +87,7 @@ const ExpenseForm: React.FC = () => {
           type="text"
           id="title"
           name="title"
-          defaultValue={defaultValue?.title}
+          defaultValue={expenseData?.title}
           required
           maxLength={30}
           className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -90,7 +106,7 @@ const ExpenseForm: React.FC = () => {
             type="number"
             id="amount"
             name="amount"
-            defaultValue={defaultValue?.amount}
+            defaultValue={expenseData?.amount}
             min="0"
             step="0.01"
             required
@@ -108,7 +124,7 @@ const ExpenseForm: React.FC = () => {
             type="date"
             id="date"
             name="date"
-            defaultValue={defaultValue?.date}
+            defaultValue={expenseData?.date.toString().slice(0, 10)}
             max={today}
             required
             className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -117,8 +133,8 @@ const ExpenseForm: React.FC = () => {
       </div>
       {validationErrors && (
         <ul className="mb-4 list-inside list-disc text-red-500">
-          {Object.values(validationErrors).map((error) => (
-            <li key={error as string}>{error as string}</li>
+          {Object.values(validationErrors).map((error: string) => (
+            <li key={error}>{error}</li>
           ))}
         </ul>
       )}
